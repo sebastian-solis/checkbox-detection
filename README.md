@@ -64,8 +64,8 @@ curl -X POST http://localhost:8000/detect \
 ```json
 {
   "boxes": [
-    { "bbox": [312, 2757, 379, 2807], "is_checked": true },
-    { "bbox": [1124, 2206, 1192, 2256], "is_checked": false }
+    { "bbox": [434, 2757, 489, 2807], "is_checked": true },
+    { "bbox": [2018, 3861, 2073, 3905], "is_checked": false }
   ]
 }
 ```
@@ -171,8 +171,8 @@ IoU >= 0.5:
 document                                 prec  recall     f1  class acc
 manufactured_home_appraisal             0.987   0.987  0.987      1.000
 neighborhood_site_section               0.955   0.977  0.966      0.976
-uniform_residential_appraisal           0.944   1.000  0.971      1.000
-TOTAL                                   0.960   0.992  0.975      0.996
+uniform_residential_appraisal           0.992   1.000  0.996      1.000
+TOTAL                                   0.983   0.992  0.988      0.996
 ```
 
 The fourth document, `market_conditions_addendum`, is deliberately left
@@ -197,7 +197,7 @@ resolutions rather than assuming 300 DPI.
 | Variable | Default | Purpose |
 |---|---|---|
 | `MIN_BOX_WIDTH_RATIO` | `0.009` | Smallest checkbox, as a fraction of page width |
-| `MAX_BOX_WIDTH_RATIO` | `0.028` | Largest checkbox, same units |
+| `MAX_BOX_WIDTH_RATIO` | `0.024` | Largest checkbox, same units |
 | `MIN_ASPECT_RATIO` | `0.65` | Reject shapes too tall to be a checkbox |
 | `MAX_ASPECT_RATIO` | `1.55` | Reject shapes too wide to be a checkbox |
 | `MIN_EXTENT` | `0.72` | Reject ragged shapes such as letter loops |

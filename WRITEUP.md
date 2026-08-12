@@ -94,10 +94,10 @@ At IoU >= 0.5, over 240 hand-checked checkboxes:
 
 | document | precision | recall | F1 | classification |
 |---|---|---|---|---|
+| uniform_residential_appraisal | 0.992 | 1.000 | 0.996 | 1.000 |
 | manufactured_home_appraisal | 0.987 | 0.987 | 0.987 | 1.000 |
-| uniform_residential_appraisal | 0.944 | 1.000 | 0.971 | 1.000 |
 | neighborhood_site_section | 0.955 | 0.977 | 0.966 | 0.976 |
-| **pooled** | **0.960** | **0.992** | **0.975** | **0.996** |
+| **pooled** | **0.983** | **0.992** | **0.988** | **0.996** |
 
 The fourth document is excluded for the reason set out below, and the harness
 names it in its output rather than quietly averaging over what it has.
@@ -140,9 +140,18 @@ Print ink on these forms is black and effectively unsaturated, so mean
 saturation over the strokes separates them. Precision on that page went from
 0.963 to 0.987, again with recall untouched.
 
-Both fixes came from a number telling me where to look. Two earlier attempts to
-chase a single missed checkbox by eye either did nothing or made things actively
-worse, and I only knew because I was counting.
+The third came from auditing the finished work rather than from a failure. With
+three documents reviewed, the size ceiling was no longer a guess: the largest
+real checkbox in the corpus measures 0.0216 of page width and the smallest form
+data cell still slipping through measures 0.0263. Setting the ceiling between
+them, at 0.024, took pooled precision from 0.960 to 0.983 and removed six of the
+seven remaining false positives, again with recall untouched. The value has
+margin on both sides rather than hugging either boundary, which matters because
+it will meet forms this corpus does not contain.
+
+All three fixes came from a number telling me where to look. Two earlier attempts
+to chase a single missed checkbox by eye either did nothing or made things
+actively worse, and I only knew because I was counting.
 
 ### An open question about ground truth
 
@@ -172,10 +181,12 @@ because the right choice depends on how MIRA consumes the output downstream.
   marked box beside "Other (describe)" on the Assignment Type row is not
   detected. Its border appears to merge with the surrounding table rule, so no
   closed contour survives filtering.
-- **Wide near-square table cells can pass.** The aspect ratio window runs to
-  1.55, so a squat cell is admissible on geometry alone. Tightening it trades
-  precision against recall on genuinely rectangular checkboxes, and without
-  reviewed ground truth I have no basis to pick a better point.
+- **Near-square table cells can still pass.** Cells that fall inside the size
+  and aspect windows are admissible on geometry alone; one survives on
+  `uniform_residential_appraisal`. The size ceiling has been narrowed against
+  the reviewed corpus, which removed six of the seven, but the remaining
+  separation is a matter of degree rather than of kind. A form-aware pass that
+  understands the ruled grid is the real fix.
 - **One ink threshold for all mark styles.** A single `X` and a fully shaded box
   produce very different ink fractions. The threshold is set low enough to catch
   light marks, which makes a heavily smudged empty box a plausible false

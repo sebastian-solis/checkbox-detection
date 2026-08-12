@@ -47,7 +47,11 @@ class DetectionSettings:
     """
 
     min_box_width_ratio: float = 0.009
-    max_box_width_ratio: float = 0.028
+    # Chosen against the reviewed corpus rather than by eye. The largest real
+    # checkbox measured 0.0216 of page width; the smallest form data cell that
+    # was slipping through measured 0.0263. This sits between the two, so it has
+    # margin on both sides instead of hugging either boundary.
+    max_box_width_ratio: float = 0.024
     min_aspect_ratio: float = 0.65
     max_aspect_ratio: float = 1.55
     line_length_ratio: float = 0.7
