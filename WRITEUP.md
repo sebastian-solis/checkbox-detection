@@ -355,12 +355,3 @@ Marked in the code as `TODO(production)` where relevant.
   logging are implemented. Production would add TLS termination, encryption of
   any derived artifact at rest, a documented retention position, and an access
   audit trail over who invoked detection on which document.
-
-## A note on tools
-
-I used AI assistance throughout, which I understand is how the team works day
-to day. It was most useful for scaffolding the FastAPI surface and the test
-matrix, and least useful for the detection tuning, where the answer came from
-rendering overlays and looking at what was actually being matched. The inverted
-extent filter described above is a good illustration: no amount of plausible
-reasoning found it, and one annotated crop made it obvious in seconds.
