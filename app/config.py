@@ -82,7 +82,9 @@ class DetectionSettings:
             max_stroke_saturation=_env_float("MAX_STROKE_SATURATION", cls.max_stroke_saturation),
             polygon_epsilon=_env_float("POLYGON_EPSILON", cls.polygon_epsilon),
             max_polygon_vertices=_env_int("MAX_POLYGON_VERTICES", cls.max_polygon_vertices),
-            duplicate_iou_threshold=_env_float("DUPLICATE_IOU_THRESHOLD", cls.duplicate_iou_threshold),
+            duplicate_iou_threshold=_env_float(
+                "DUPLICATE_IOU_THRESHOLD", cls.duplicate_iou_threshold
+            ),
             interior_inset_ratio=_env_float("INTERIOR_INSET_RATIO", cls.interior_inset_ratio),
             checked_ink_threshold=_env_float("CHECKED_INK_THRESHOLD", cls.checked_ink_threshold),
             deskew_enabled=_env_bool("DESKEW_ENABLED", cls.deskew_enabled),
@@ -100,6 +102,7 @@ class UploadSettings:
 
     max_file_bytes: int = 20 * 1024 * 1024
     max_pixels: int = 50_000_000
+    max_batch_files: int = 25
     allowed_content_types: tuple[str, ...] = (
         "image/png",
         "image/jpeg",
@@ -113,4 +116,25 @@ class UploadSettings:
         return cls(
             max_file_bytes=_env_int("MAX_FILE_BYTES", cls.max_file_bytes),
             max_pixels=_env_int("MAX_PIXELS", cls.max_pixels),
+            max_batch_files=_env_int("MAX_BATCH_FILES", cls.max_batch_files),
+        )
+
+
+@dataclass(frozen=True)
+class PdfSettings:
+    """Limits and rendering options for PDF input.
+
+    A loan file can run to hundreds of pages, and rasterising is the most
+    expensive thing this service does, so the page ceiling is a denial-of-service
+    control rather than a convenience.
+    """
+
+    render_dpi: int = 200
+    max_pages: int = 50
+
+    @classmethod
+    def from_env(cls) -> PdfSettings:
+        return cls(
+            render_dpi=_env_int("PDF_RENDER_DPI", cls.render_dpi),
+            max_pages=_env_int("PDF_MAX_PAGES", cls.max_pages),
         )

@@ -72,6 +72,22 @@ curl -X POST http://localhost:8000/detect \
 
 `bbox` holds `[x1, y1, x2, y2]`: the top-left and bottom-right corners in pixels.
 
+**Detection backend.** An optional `engine` parameter selects how detection is
+performed. It defaults to `classical`, the local pipeline, so a caller written
+against the specification is unaffected by it.
+
+```bash
+# Local, deterministic, no credentials, tens of milliseconds per page
+curl -X POST "http://localhost:8000/detect?engine=classical" -F "file=@page.png"
+
+# Amazon Textract selection elements; needs AWS credentials
+curl -X POST "http://localhost:8000/detect?engine=textract" -F "file=@page.png"
+```
+
+Selecting `textract` without credentials returns a `400` explaining why rather
+than failing obscurely. `WRITEUP.md` argues why the managed service is not the
+default.
+
 ### `POST /detect/debug`
 
 The same detection plus the numbers behind each verdict: `confidence`,
@@ -92,6 +108,43 @@ red for unmarked.
 curl -X POST http://localhost:8000/detect/visualize \
   -F "file=@samples/uniform_residential_appraisal.png" \
   -o annotated.png
+```
+
+### `POST /detect/pdf`
+
+Rasterises a PDF and runs detection on every page. The challenge specifies
+images, and `/detect` takes images and nothing else; this exists because the
+documents being served are loan files, which arrive as PDFs.
+
+```bash
+curl -X POST http://localhost:8000/detect/pdf -F "file=@loan_file.pdf"
+```
+
+```json
+{
+  "pages": [
+    { "page": 1, "width": 1700, "height": 2200, "boxes": [ ... ] }
+  ],
+  "page_count": 7,
+  "total_boxes": 421,
+  "render_dpi": 200,
+  "elapsed_ms": 437.2
+}
+```
+
+The response is deliberately a different shape from `/detect` rather than an
+extension of it: adding a page dimension to the specified contract would break
+every caller written against the spec.
+
+### `POST /detect/batch`
+
+Several page images in one request, under the repeated field `files`. A file
+that fails validation comes back with its own error instead of failing the
+batch.
+
+```bash
+curl -X POST http://localhost:8000/detect/batch \
+  -F "files=@page1.png" -F "files=@page2.png"
 ```
 
 ### `GET /health`
@@ -135,11 +188,11 @@ pip install -r requirements-dev.txt
 pytest -q
 ```
 
-36 tests covering the geometry primitives, the detector against synthetic pages
+58 tests covering the geometry primitives, the detector against synthetic pages
 with known answers, the HTTP contract, and every upload rejection path.
 
 ```
-36 passed in 0.76s
+58 passed in 1.66s
 ```
 
 ---
@@ -210,6 +263,39 @@ resolutions rather than assuming 300 DPI.
 | `DESKEW_ENABLED` | `true` | Straighten the page before extracting lines |
 | `MAX_FILE_BYTES` | `20971520` | Upload size ceiling |
 | `MAX_PIXELS` | `50000000` | Decoded resolution ceiling |
+| `MAX_BATCH_FILES` | `25` | Images accepted in one batch request |
+| `PDF_RENDER_DPI` | `200` | Resolution PDF pages are rasterised at |
+| `PDF_MAX_PAGES` | `50` | Page ceiling for a submitted PDF |
+
+---
+
+## Performance
+
+Detection is CPU-bound and single-threaded. Measured on an M-series laptop,
+five runs per document:
+
+| document | pixels | median | slowest |
+|---|---|---|---|
+| neighborhood_site_section | 1586x846 | 15 ms | 20 ms |
+| manufactured_home_appraisal | 2550x3301 | 59 ms | 134 ms |
+| uniform_residential_appraisal | 2550x4200 | 81 ms | 86 ms |
+| market_conditions_addendum | 2550x4200 | 85 ms | 103 ms |
+
+A seven-page PDF rasterised at 200 DPI and fully processed takes about 440 ms
+end to end, rasterisation included.
+
+---
+
+## Continuous integration
+
+`.github/workflows/ci.yml` runs on every push:
+
+- compiles every module, which catches semantic syntax errors a linter walks past
+- runs the test suite
+- runs the evaluation harness, so a threshold change that helps one document and
+  quietly ruins another cannot merge
+- builds the image, starts it, and asserts the `/detect` contract against a real
+  sample
 
 ---
 
@@ -245,6 +331,8 @@ app/
     preprocess.py      Grayscale, binarization, deskew, line extraction
     classical.py       Detection and filled/unfilled classification
     render.py          Overlay drawing
+    pdf.py             PDF rasterisation via pypdfium2
+    textract.py        Amazon Textract backend, selectable per request
 static/index.html      Browser UI
 eval/
   bootstrap_annotations.py  Seed annotation drafts from detector output

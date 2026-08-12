@@ -1,0 +1,13 @@
+# Ruff configuration.
+target-version = "py311"
+line-length = 100
+
+[lint]
+select = ["E", "F", "W", "B", "I", "UP", "SIM", "C4", "RUF"]
+
+[lint.per-file-ignores]
+# FastAPI declares dependencies as argument defaults: `file: UploadFile = File(...)`
+# is the framework's documented idiom, not the mutable-default bug B008 targets.
+# Rewriting it to satisfy the rule would make the routes less readable and would
+# break FastAPI's ability to derive the OpenAPI schema.
+"app/main.py" = ["B008"]

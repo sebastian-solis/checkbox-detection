@@ -70,8 +70,11 @@ class Checkbox:
     bbox: BoundingBox
     is_checked: bool
     confidence: float
-    ink_ratio: float
-    """Fraction of the box interior covered in ink.
+    ink_ratio: float | None
+    """Fraction of the box interior covered in ink, or None.
+
+    None means the backend that produced this detection does not measure ink at
+    all, which is the case for Textract.
 
     Exposed because it is the single number the filled/unfilled decision rests
     on, and surfacing it makes borderline cases debuggable instead of magic.

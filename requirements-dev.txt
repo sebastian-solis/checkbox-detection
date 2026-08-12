@@ -2,3 +2,7 @@
 pytest==9.1.1
 httpx==0.28.1
 httpx2==2.10.0
+ruff==0.16.2
+# Optional: only needed to exercise the Textract backend against real AWS.
+# The adapter's tests run against recorded responses and do not need it.
+boto3==1.43.69

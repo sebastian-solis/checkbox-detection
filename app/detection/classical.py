@@ -47,7 +47,7 @@ def _find_box_candidates(
     Sizes are expressed as a fraction of page width so the same thresholds hold
     whether the scan came in at 200 or 600 DPI.
     """
-    height, width = shape[:2]
+    width = shape[1]
     min_side = max(6, int(width * settings.min_box_width_ratio))
     max_side = int(width * settings.max_box_width_ratio)
 

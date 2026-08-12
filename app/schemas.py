@@ -40,8 +40,12 @@ class DebugBox(Box):
     confidence: float = Field(
         ..., description="Heuristic certainty from 0.5 to 1.0, not a probability."
     )
-    ink_ratio: float = Field(
-        ..., description="Fraction of the box interior covered in ink."
+    ink_ratio: float | None = Field(
+        None,
+        description=(
+            "Fraction of the box interior covered in ink, or null when the "
+            "backend does not measure it."
+        ),
     )
 
 
@@ -54,6 +58,54 @@ class DebugResponse(BaseModel):
     elapsed_ms: float
     checked_count: int
     unchecked_count: int
+
+
+class PageResult(BaseModel):
+    """Detections for one page of a multi-page document."""
+
+    page: int = Field(..., description="1-based page number.")
+    width: int = Field(..., description="Rendered page width in pixels.")
+    height: int = Field(..., description="Rendered page height in pixels.")
+    boxes: list[Box]
+
+
+class PdfDetectResponse(BaseModel):
+    """The response returned by POST /detect/pdf.
+
+    Deliberately a different shape from DetectResponse rather than an extension
+    of it: /detect's contract is fixed by the specification and adding a page
+    dimension to it would break every caller written against the spec.
+    """
+
+    pages: list[PageResult]
+    page_count: int
+    total_boxes: int
+    render_dpi: int
+    elapsed_ms: float
+
+
+class BatchItem(BaseModel):
+    """One image's result inside a batch.
+
+    Either `boxes` or `error` is meaningful: a file that failed validation does
+    not take the rest of the batch down with it.
+    """
+
+    index: int = Field(..., description="0-based position in the submitted list.")
+    boxes: list[Box] = Field(default_factory=list)
+    error: str | None = Field(
+        default=None, description="Why this file was rejected, if it was."
+    )
+
+
+class BatchDetectResponse(BaseModel):
+    """The response returned by POST /detect/batch."""
+
+    results: list[BatchItem]
+    file_count: int
+    failed_count: int
+    total_boxes: int
+    elapsed_ms: float
 
 
 class HealthResponse(BaseModel):

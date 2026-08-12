@@ -172,9 +172,9 @@
         <div class="pad">
           <label class="drop" id="drop" for="file">
             <b>Drop an appraisal page</b>
-            <span>or click to browse. PNG, JPEG, TIFF, BMP, WEBP.</span>
+            <span>or click to browse. PDF, PNG, JPEG, TIFF, BMP, WEBP.</span>
           </label>
-          <input type="file" id="file" accept="image/*">
+          <input type="file" id="file" accept="image/*,application/pdf">
           <div class="samples">
             <button class="chip" data-sample="uniform_residential_appraisal.png">Uniform Residential</button>
             <button class="chip" data-sample="manufactured_home_appraisal.png">Manufactured Home</button>
@@ -281,6 +281,9 @@ function showError(message) {
 }
 
 async function analyse(file) {
+  if (file.type === 'application/pdf' || file.name.toLowerCase().endsWith('.pdf')) {
+    return analysePdf(file);
+  }
   errorEl.innerHTML = '';
   document.getElementById('summary').hidden = true;
   document.getElementById('listCard').hidden = true;
@@ -414,6 +417,50 @@ function draw() {
       context.fillRect(x1 * scale, y1 * scale, (x2 - x1) * scale, (y2 - y1) * scale);
     }
   }
+}
+
+// A loan file is a PDF, so the UI reads them too. Pages are rendered server
+// side and paged through here rather than shipping a PDF renderer to the
+// browser for what is a review tool, not a viewer.
+async function analysePdf(file) {
+  errorEl.innerHTML = '';
+  document.getElementById('summary').hidden = true;
+  document.getElementById('listCard').hidden = true;
+  stage.innerHTML = '<div class="empty"><div class="spinner"></div>Reading the document\u2026</div>';
+
+  const body = new FormData();
+  body.append('file', file);
+
+  let payload;
+  try {
+    const response = await fetch('/detect/pdf', { method: 'POST', body });
+    payload = await response.json();
+    if (!response.ok) {
+      stage.innerHTML = '<div class="empty">Nothing to show.</div>';
+      showError(payload.detail || 'The document could not be processed.');
+      return;
+    }
+  } catch (err) {
+    stage.innerHTML = '<div class="empty">Nothing to show.</div>';
+    showError('Could not reach the service.');
+    return;
+  }
+
+  const checked = payload.pages.reduce(
+    (total, page) => total + page.boxes.filter(box => box.is_checked).length, 0);
+
+  stage.innerHTML = `<div class="empty">
+      <b>${payload.page_count} pages</b><br>
+      ${payload.total_boxes} checkboxes, ${checked} of them marked<br>
+      <span style="font-size:12px">Rendered at ${payload.render_dpi} DPI in ${payload.elapsed_ms} ms.
+      Upload a single page image to inspect detections visually.</span>
+    </div>`;
+
+  document.getElementById('tChecked').textContent = checked;
+  document.getElementById('tUnchecked').textContent = payload.total_boxes - checked;
+  document.getElementById('tReview').textContent = '\u2013';
+  document.getElementById('reviewBanner').hidden = true;
+  document.getElementById('summary').hidden = false;
 }
 
 window.addEventListener('resize', draw);

@@ -12,19 +12,23 @@ import time
 import uuid
 from pathlib import Path
 
-from fastapi import FastAPI, File, Request, UploadFile
+from fastapi import FastAPI, File, Query, Request, UploadFile
 from fastapi.responses import FileResponse, JSONResponse, Response
 from fastapi.staticfiles import StaticFiles
 
-from app.config import DetectionSettings, UploadSettings
-from app.detection import classical, render
+from app.config import DetectionSettings, PdfSettings, UploadSettings
+from app.detection import classical, pdf, render, textract
 from app.schemas import (
+    BatchDetectResponse,
+    BatchItem,
     Box,
     DebugBox,
     DebugResponse,
     DetectResponse,
     ErrorResponse,
     HealthResponse,
+    PageResult,
+    PdfDetectResponse,
 )
 from app.security import UploadRejected, validate_and_decode
 
@@ -41,6 +45,7 @@ logger = logging.getLogger("checkbox-detection")
 
 detection_settings = DetectionSettings.from_env()
 upload_settings = UploadSettings.from_env()
+pdf_settings = PdfSettings.from_env()
 
 app = FastAPI(
     title="Checkbox Detection",
@@ -79,14 +84,27 @@ async def handle_upload_rejected(request: Request, exc: UploadRejected):
     responses={400: {"model": ErrorResponse}},
     summary="Detect and classify checkboxes in a document image",
 )
-async def detect(request: Request, file: UploadFile = File(...)) -> DetectResponse:
+async def detect(
+    request: Request,
+    file: UploadFile = File(...),
+    engine: str = Query(
+        "classical",
+        pattern="^(classical|textract)$",
+        description=(
+            "Detection backend. 'classical' is local, deterministic and needs no "
+            "credentials. 'textract' delegates to Amazon Textract selection "
+            "elements and requires AWS credentials."
+        ),
+    ),
+) -> DetectResponse:
     """Return every checkbox found in the uploaded image.
 
     This is the endpoint specified by the challenge and its response shape is
     fixed: a list of boxes, each with pixel coordinates and whether it is
-    marked.
+    marked. The engine parameter is additive and defaults to the local pipeline,
+    so a caller written against the specification is unaffected by it.
     """
-    checkboxes, _, elapsed_ms, _ = await _run_detection(request, file)
+    checkboxes, _, _, _ = await _run_detection(request, file, engine=engine)
     return DetectResponse(
         boxes=[
             Box(bbox=checkbox.bbox.as_list(), is_checked=checkbox.is_checked)
@@ -143,6 +161,140 @@ async def detect_visualize(request: Request, file: UploadFile = File(...)) -> Re
     )
 
 
+@app.post(
+    "/detect/pdf",
+    response_model=PdfDetectResponse,
+    responses={400: {"model": ErrorResponse}},
+    summary="Detect checkboxes on every page of a PDF",
+)
+async def detect_pdf(request: Request, file: UploadFile = File(...)) -> PdfDetectResponse:
+    """Rasterise a PDF and run detection over each page.
+
+    The challenge specifies images, and `/detect` takes images and nothing else.
+    This exists because the documents this serves are loan files, which arrive as
+    PDFs, and pushing rasterisation onto every caller is the wrong default.
+    """
+    request_id = getattr(request.state, "request_id", "unknown")
+    payload = await file.read()
+
+    if not payload:
+        raise UploadRejected("Empty upload.")
+    if len(payload) > upload_settings.max_file_bytes:
+        raise UploadRejected("File exceeds the upload size limit.")
+    if not pdf.looks_like_pdf(payload):
+        raise UploadRejected("File content is not a PDF.")
+
+    started = time.perf_counter()
+    try:
+        pages = pdf.rasterise(payload, pdf_settings)
+    except pdf.PdfRejected as exc:
+        raise UploadRejected(str(exc)) from None
+
+    results: list[PageResult] = []
+    total = 0
+    for number, page_image in enumerate(pages, start=1):
+        checkboxes = classical.detect(page_image, detection_settings)
+        total += len(checkboxes)
+        height, width = page_image.shape[:2]
+        results.append(
+            PageResult(
+                page=number,
+                width=width,
+                height=height,
+                boxes=[
+                    Box(bbox=checkbox.bbox.as_list(), is_checked=checkbox.is_checked)
+                    for checkbox in checkboxes
+                ],
+            )
+        )
+
+    elapsed_ms = round((time.perf_counter() - started) * 1000, 1)
+    logger.info(
+        "pdf detection complete request_id=%s pages=%d detections=%d elapsed_ms=%.1f",
+        request_id,
+        len(results),
+        total,
+        elapsed_ms,
+    )
+
+    return PdfDetectResponse(
+        pages=results,
+        page_count=len(results),
+        total_boxes=total,
+        render_dpi=pdf_settings.render_dpi,
+        elapsed_ms=elapsed_ms,
+    )
+
+
+@app.post(
+    "/detect/batch",
+    response_model=BatchDetectResponse,
+    responses={400: {"model": ErrorResponse}},
+    summary="Detect checkboxes across several images in one request",
+)
+async def detect_batch(
+    request: Request, files: list[UploadFile] = File(...)
+) -> BatchDetectResponse:
+    """Run detection over a set of page images submitted together.
+
+    One request per page is fine interactively and wasteful for a stack of
+    scans. A rejected file does not fail the batch: it comes back with its own
+    error so the caller can retry that page alone rather than the whole set.
+    """
+    request_id = getattr(request.state, "request_id", "unknown")
+
+    if len(files) > upload_settings.max_batch_files:
+        raise UploadRejected(
+            f"Batch holds {len(files)} files, over the "
+            f"{upload_settings.max_batch_files} file limit."
+        )
+
+    started = time.perf_counter()
+    results: list[BatchItem] = []
+    total = 0
+
+    for position, upload in enumerate(files):
+        payload = await upload.read()
+        try:
+            image = validate_and_decode(payload, upload.content_type, upload_settings)
+        except UploadRejected as exc:
+            # The filename is caller-supplied and echoing it would put document
+            # metadata in the response, so items are identified by position.
+            results.append(BatchItem(index=position, error=str(exc)))
+            continue
+
+        checkboxes = classical.detect(image, detection_settings)
+        total += len(checkboxes)
+        results.append(
+            BatchItem(
+                index=position,
+                boxes=[
+                    Box(bbox=checkbox.bbox.as_list(), is_checked=checkbox.is_checked)
+                    for checkbox in checkboxes
+                ],
+            )
+        )
+
+    elapsed_ms = round((time.perf_counter() - started) * 1000, 1)
+    failed = sum(1 for item in results if item.error is not None)
+    logger.info(
+        "batch detection complete request_id=%s files=%d failed=%d detections=%d elapsed_ms=%.1f",
+        request_id,
+        len(results),
+        failed,
+        total,
+        elapsed_ms,
+    )
+
+    return BatchDetectResponse(
+        results=results,
+        file_count=len(results),
+        failed_count=failed,
+        total_boxes=total,
+        elapsed_ms=elapsed_ms,
+    )
+
+
 @app.get("/health", response_model=HealthResponse, summary="Liveness probe")
 async def health() -> HealthResponse:
     return HealthResponse(status="ok", version=VERSION)
@@ -153,7 +305,7 @@ async def index() -> FileResponse:
     return FileResponse(_STATIC_DIR / "index.html")
 
 
-async def _run_detection(request: Request, file: UploadFile):
+async def _run_detection(request: Request, file: UploadFile, engine: str = "classical"):
     """Shared path: validate, decode, detect, and log without leaking content."""
     request_id = getattr(request.state, "request_id", "unknown")
     payload = await file.read()
@@ -161,14 +313,21 @@ async def _run_detection(request: Request, file: UploadFile):
     image = validate_and_decode(payload, file.content_type, upload_settings)
 
     started = time.perf_counter()
-    checkboxes = classical.detect(image, detection_settings)
+    if engine == "textract":
+        try:
+            checkboxes = textract.detect(payload, image.shape[:2])
+        except textract.TextractUnavailable as exc:
+            raise UploadRejected(str(exc)) from None
+    else:
+        checkboxes = classical.detect(image, detection_settings)
     elapsed_ms = round((time.perf_counter() - started) * 1000, 1)
 
     height, width = image.shape[:2]
     # Measurements only. The document body never reaches the log.
     logger.info(
-        "detection complete request_id=%s dimensions=%dx%d detections=%d elapsed_ms=%.1f",
+        "detection complete request_id=%s engine=%s dimensions=%dx%d detections=%d elapsed_ms=%.1f",
         request_id,
+        engine,
         width,
         height,
         len(checkboxes),

@@ -1,0 +1,54 @@
+name: CI
+
+on:
+  push:
+  pull_request:
+
+jobs:
+  test:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.13"
+          cache: pip
+
+      - name: Install dependencies
+        run: pip install -r requirements-dev.txt
+
+      - name: Compile every module
+        # Catches semantic syntax errors that a linter walks past.
+        run: python -m compileall -q app eval tools tests
+
+      - name: Lint
+        run: ruff check app eval tools tests
+
+      - name: Tests
+        run: pytest -q
+
+      - name: Detection quality
+        # The harness scores against hand-checked ground truth and exits non-zero
+        # if no document has been reviewed. Wiring it in here is what stops a
+        # threshold change that helps one page and quietly ruins another.
+        run: python eval/evaluate.py --verbose
+
+  image:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Build the image
+        run: docker build -t checkbox-detection:ci .
+
+      - name: Run it and check the contract
+        run: |
+          docker run -d --name svc -p 8000:8000 checkbox-detection:ci
+          for _ in $(seq 1 30); do
+            curl -fsS http://localhost:8000/health && break || sleep 2
+          done
+          curl -fsS -X POST http://localhost:8000/detect \
+            -F "file=@samples/uniform_residential_appraisal.png" \
+            | python -c "import json,sys; d=json.load(sys.stdin); assert set(d)=={'boxes'}; assert d['boxes']; print(f\"contract ok, {len(d['boxes'])} boxes\")"
+          docker rm -f svc

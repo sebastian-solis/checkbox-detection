@@ -6,3 +6,4 @@ opencv-python-headless==5.0.0.93
 numpy==2.5.2
 pillow==12.3.0
 python-multipart==0.0.32
+pypdfium2==5.12.1

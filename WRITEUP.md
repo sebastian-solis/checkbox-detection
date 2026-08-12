@@ -32,6 +32,39 @@ The pipeline is deterministic OpenCV:
    remaining interior is measured. Above `CHECKED_INK_THRESHOLD` the box counts
    as marked.
 
+### Why not a managed service
+
+This problem is already solved by products. Amazon Textract's `AnalyzeDocument`
+with the `FORMS` feature returns `SELECTION_ELEMENT` blocks carrying a bounding
+box and a `SelectionStatus` of `SELECTED` or `NOT_SELECTED`, which is this
+challenge restated. Azure Document Intelligence calls the same thing selection
+marks, Google Document AI exposes it through the form parser. The brief permits
+any tool and HomeVision already runs on AWS, so the honest question is not
+whether I knew, but why the default is a local pipeline.
+
+Three reasons, none of them about accuracy:
+
+- **The submission has to run.** A solution whose only path needs an AWS account,
+  credentials and a billing relationship cannot be built and run from the
+  instructions by whoever reviews it. That alone rules it out as the default.
+- **Latency and cost per page.** A network round trip is one to three seconds
+  against tens of milliseconds locally, and it carries a per-page charge. For a
+  thousand-page loan file that difference is the architecture.
+- **Every page leaves the process.** These documents carry borrower names,
+  addresses and financial detail. Sending them out is a decision with compliance
+  weight, not a default, even to a provider already in the stack.
+
+So Textract is wired in as a swappable backend rather than ignored:
+`POST /detect?engine=textract` runs the same contract through it, and selecting
+it without credentials returns a clear error rather than a stack trace. The
+parsing is tested against recorded Textract responses, so the adapter is covered
+without credentials or a billed request.
+
+The case for switching the default is real and I would make it on evidence: at
+volume, against a labelled corpus, if Textract beats this pipeline by enough to
+justify the cost and the data egress. That is a measurement I do not have, and
+the harness in `eval/` is exactly where it would be run.
+
 ### Why not a learned model
 
 The challenge ships four images. That is enough to sanity-check a heuristic and
@@ -175,6 +208,33 @@ cells with low confidence, which is closest to what the service does now.
 This is exactly the kind of question I would rather ask than answer unilaterally,
 because the right choice depends on how MIRA consumes the output downstream.
 
+## Going past the brief: PDF input
+
+The challenge asks for images and `POST /detect` takes images and nothing else,
+exactly as specified. But the documents this would serve are loan files, and a
+loan file is a PDF. A service that only accepts PNGs pushes rasterisation onto
+every caller, which is the wrong default for the actual workload.
+
+`POST /detect/pdf` renders each page and returns detections per page. It is a
+separate endpoint with its own response shape rather than an extension of
+`/detect`, because adding a page dimension to the specified contract would break
+every caller written against the spec. The specified endpoint stays exactly as
+specified.
+
+The library choice is worth a line. PyMuPDF is the usual reach for this and it
+is AGPL, which is a licence a commercial product cannot absorb without
+consequences for everything it links into. pypdfium2 wraps Google's PDFium under
+BSD-3-Clause and Apache-2.0, ships as a self-contained wheel with no system
+package to install, and renders these forms just as well. Running the challenge
+description PDF itself through it, seven pages at 200 DPI, takes about 440 ms
+end to end.
+
+`POST /detect/batch` follows the same reasoning for a stack of separate page
+images: one request per page is fine interactively and wasteful at volume. A
+file that fails validation returns its own error rather than failing the batch,
+and items are identified by position because filenames are caller-supplied
+metadata that has no business in a response.
+
 ## Known limitations
 
 - **Some checkboxes are missed.** On the manufactured home appraisal, the
@@ -194,8 +254,11 @@ because the right choice depends on how MIRA consumes the output downstream.
 - **The confidence score is a heuristic, not a probability.** It reports
   distance from the decision boundary, rescaled to 0.5 to 1.0. It is useful for
   ranking borderline cases and should not be read as a calibrated likelihood.
-- **Single page, single image.** Multi-page PDFs are out of scope; the caller
-  rasterises and submits pages individually.
+- **Tuned for forms, not for prose.** Running the challenge description PDF
+  through `/detect/pdf` reports 22, 12 and 23 boxes on its three text pages,
+  none of them real. The pipeline assumes a ruled form and has no notion of
+  whether a page is one; a document-type gate ahead of detection would fix it
+  and is not built.
 - **Deskew is global.** A page with different skew top and bottom, as happens
   with a curled scan, is not corrected per region.
 
