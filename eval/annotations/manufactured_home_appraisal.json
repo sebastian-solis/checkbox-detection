@@ -1,0 +1,797 @@
+{
+  "source_image": "manufactured_home_appraisal.png",
+  "reviewed": true,
+  "note": "Reviewed by hand against eval/sheets/ and full-page overlays. Removed 3 false positives (one fragment beside the black sidebar, two interiors of the red watermark ring) and added the marked Other (describe) box on the Assignment Type row, whose border merges with the table rule.",
+  "boxes": [
+    {
+      "index": 0,
+      "bbox": [
+        366,
+        1102,
+        396,
+        1131
+      ],
+      "is_checked": false
+    },
+    {
+      "index": 1,
+      "bbox": [
+        366,
+        793,
+        396,
+        822
+      ],
+      "is_checked": false
+    },
+    {
+      "index": 2,
+      "bbox": [
+        1723,
+        3019,
+        1752,
+        3048
+      ],
+      "is_checked": true
+    },
+    {
+      "index": 3,
+      "bbox": [
+        1277,
+        2785,
+        1306,
+        2814
+      ],
+      "is_checked": true
+    },
+    {
+      "index": 4,
+      "bbox": [
+        1130,
+        2707,
+        1159,
+        2736
+      ],
+      "is_checked": true
+    },
+    {
+      "index": 5,
+      "bbox": [
+        1868,
+        2473,
+        1897,
+        2502
+      ],
+      "is_checked": true
+    },
+    {
+      "index": 6,
+      "bbox": [
+        1007,
+        2239,
+        1036,
+        2268
+      ],
+      "is_checked": true
+    },
+    {
+      "index": 7,
+      "bbox": [
+        1413,
+        2161,
+        1442,
+        2190
+      ],
+      "is_checked": true
+    },
+    {
+      "index": 8,
+      "bbox": [
+        1127,
+        2083,
+        1156,
+        2112
+      ],
+      "is_checked": true
+    },
+    {
+      "index": 9,
+      "bbox": [
+        821,
+        2044,
+        850,
+        2073
+      ],
+      "is_checked": true
+    },
+    {
+      "index": 10,
+      "bbox": [
+        1218,
+        2005,
+        1247,
+        2034
+      ],
+      "is_checked": true
+    },
+    {
+      "index": 11,
+      "bbox": [
+        601,
+        2005,
+        630,
+        2034
+      ],
+      "is_checked": true
+    },
+    {
+      "index": 12,
+      "bbox": [
+        2144,
+        1966,
+        2173,
+        1995
+      ],
+      "is_checked": true
+    },
+    {
+      "index": 13,
+      "bbox": [
+        1218,
+        1966,
+        1247,
+        1995
+      ],
+      "is_checked": true
+    },
+    {
+      "index": 14,
+      "bbox": [
+        500,
+        1966,
+        529,
+        1995
+      ],
+      "is_checked": true
+    },
+    {
+      "index": 15,
+      "bbox": [
+        1657,
+        1849,
+        1686,
+        1878
+      ],
+      "is_checked": true
+    },
+    {
+      "index": 16,
+      "bbox": [
+        553,
+        1810,
+        582,
+        1839
+      ],
+      "is_checked": true
+    },
+    {
+      "index": 17,
+      "bbox": [
+        1335,
+        1381,
+        1364,
+        1410
+      ],
+      "is_checked": false
+    },
+    {
+      "index": 18,
+      "bbox": [
+        1137,
+        1381,
+        1166,
+        1410
+      ],
+      "is_checked": true
+    },
+    {
+      "index": 19,
+      "bbox": [
+        779,
+        1381,
+        808,
+        1410
+      ],
+      "is_checked": false
+    },
+    {
+      "index": 20,
+      "bbox": [
+        611,
+        1381,
+        640,
+        1410
+      ],
+      "is_checked": true
+    },
+    {
+      "index": 21,
+      "bbox": [
+        448,
+        1381,
+        477,
+        1410
+      ],
+      "is_checked": false
+    },
+    {
+      "index": 22,
+      "bbox": [
+        1335,
+        1342,
+        1364,
+        1371
+      ],
+      "is_checked": true
+    },
+    {
+      "index": 23,
+      "bbox": [
+        611,
+        1342,
+        640,
+        1371
+      ],
+      "is_checked": true
+    },
+    {
+      "index": 24,
+      "bbox": [
+        448,
+        1342,
+        477,
+        1371
+      ],
+      "is_checked": false
+    },
+    {
+      "index": 25,
+      "bbox": [
+        1335,
+        1303,
+        1364,
+        1332
+      ],
+      "is_checked": true
+    },
+    {
+      "index": 26,
+      "bbox": [
+        779,
+        1303,
+        808,
+        1332
+      ],
+      "is_checked": false
+    },
+    {
+      "index": 27,
+      "bbox": [
+        611,
+        1303,
+        640,
+        1332
+      ],
+      "is_checked": true
+    },
+    {
+      "index": 28,
+      "bbox": [
+        448,
+        1303,
+        477,
+        1332
+      ],
+      "is_checked": false
+    },
+    {
+      "index": 29,
+      "bbox": [
+        464,
+        1102,
+        493,
+        1131
+      ],
+      "is_checked": true
+    },
+    {
+      "index": 30,
+      "bbox": [
+        2161,
+        946,
+        2190,
+        975
+      ],
+      "is_checked": false
+    },
+    {
+      "index": 31,
+      "bbox": [
+        464,
+        793,
+        493,
+        822
+      ],
+      "is_checked": false
+    },
+    {
+      "index": 32,
+      "bbox": [
+        2024,
+        595,
+        2053,
+        624
+      ],
+      "is_checked": true
+    },
+    {
+      "index": 33,
+      "bbox": [
+        854,
+        517,
+        883,
+        546
+      ],
+      "is_checked": false
+    },
+    {
+      "index": 34,
+      "bbox": [
+        828,
+        478,
+        857,
+        507
+      ],
+      "is_checked": false
+    },
+    {
+      "index": 35,
+      "bbox": [
+        634,
+        478,
+        663,
+        507
+      ],
+      "is_checked": true
+    },
+    {
+      "index": 36,
+      "bbox": [
+        1706,
+        439,
+        1735,
+        468
+      ],
+      "is_checked": false
+    },
+    {
+      "index": 37,
+      "bbox": [
+        1550,
+        439,
+        1579,
+        468
+      ],
+      "is_checked": false
+    },
+    {
+      "index": 38,
+      "bbox": [
+        1729,
+        400,
+        1758,
+        429
+      ],
+      "is_checked": false
+    },
+    {
+      "index": 39,
+      "bbox": [
+        1218,
+        400,
+        1247,
+        429
+      ],
+      "is_checked": false
+    },
+    {
+      "index": 40,
+      "bbox": [
+        731,
+        400,
+        760,
+        429
+      ],
+      "is_checked": false
+    },
+    {
+      "index": 41,
+      "bbox": [
+        458,
+        400,
+        487,
+        429
+      ],
+      "is_checked": true
+    },
+    {
+      "index": 42,
+      "bbox": [
+        748,
+        2356,
+        776,
+        2385
+      ],
+      "is_checked": true
+    },
+    {
+      "index": 43,
+      "bbox": [
+        779,
+        1343,
+        808,
+        1371
+      ],
+      "is_checked": false
+    },
+    {
+      "index": 44,
+      "bbox": [
+        1137,
+        1342,
+        1165,
+        1371
+      ],
+      "is_checked": false
+    },
+    {
+      "index": 45,
+      "bbox": [
+        1137,
+        1303,
+        1165,
+        1332
+      ],
+      "is_checked": false
+    },
+    {
+      "index": 46,
+      "bbox": [
+        2048,
+        946,
+        2076,
+        975
+      ],
+      "is_checked": false
+    },
+    {
+      "index": 47,
+      "bbox": [
+        1700,
+        907,
+        1728,
+        936
+      ],
+      "is_checked": false
+    },
+    {
+      "index": 48,
+      "bbox": [
+        1017,
+        478,
+        1045,
+        507
+      ],
+      "is_checked": false
+    },
+    {
+      "index": 49,
+      "bbox": [
+        1544,
+        400,
+        1572,
+        429
+      ],
+      "is_checked": false
+    },
+    {
+      "index": 50,
+      "bbox": [
+        1332,
+        400,
+        1360,
+        429
+      ],
+      "is_checked": false
+    },
+    {
+      "index": 51,
+      "bbox": [
+        1238,
+        2709,
+        1267,
+        2736
+      ],
+      "is_checked": false
+    },
+    {
+      "index": 52,
+      "bbox": [
+        1121,
+        2241,
+        1150,
+        2268
+      ],
+      "is_checked": false
+    },
+    {
+      "index": 53,
+      "bbox": [
+        1241,
+        2085,
+        1270,
+        2112
+      ],
+      "is_checked": false
+    },
+    {
+      "index": 54,
+      "bbox": [
+        715,
+        2046,
+        744,
+        2073
+      ],
+      "is_checked": false
+    },
+    {
+      "index": 55,
+      "bbox": [
+        500,
+        2007,
+        529,
+        2034
+      ],
+      "is_checked": false
+    },
+    {
+      "index": 56,
+      "bbox": [
+        601,
+        1968,
+        630,
+        1995
+      ],
+      "is_checked": false
+    },
+    {
+      "index": 57,
+      "bbox": [
+        1771,
+        1851,
+        1800,
+        1878
+      ],
+      "is_checked": false
+    },
+    {
+      "index": 58,
+      "bbox": [
+        1163,
+        1812,
+        1192,
+        1839
+      ],
+      "is_checked": false
+    },
+    {
+      "index": 59,
+      "bbox": [
+        673,
+        1812,
+        702,
+        1839
+      ],
+      "is_checked": false
+    },
+    {
+      "index": 60,
+      "bbox": [
+        1505,
+        1381,
+        1532,
+        1410
+      ],
+      "is_checked": false
+    },
+    {
+      "index": 61,
+      "bbox": [
+        1505,
+        1342,
+        1532,
+        1371
+      ],
+      "is_checked": false
+    },
+    {
+      "index": 62,
+      "bbox": [
+        1505,
+        1303,
+        1532,
+        1332
+      ],
+      "is_checked": false
+    },
+    {
+      "index": 63,
+      "bbox": [
+        1603,
+        907,
+        1630,
+        936
+      ],
+      "is_checked": false
+    },
+    {
+      "index": 64,
+      "bbox": [
+        1918,
+        595,
+        1945,
+        624
+      ],
+      "is_checked": false
+    },
+    {
+      "index": 65,
+      "bbox": [
+        553,
+        517,
+        580,
+        546
+      ],
+      "is_checked": false
+    },
+    {
+      "index": 66,
+      "bbox": [
+        592,
+        400,
+        619,
+        429
+      ],
+      "is_checked": false
+    },
+    {
+      "index": 67,
+      "bbox": [
+        861,
+        2358,
+        889,
+        2385
+      ],
+      "is_checked": false
+    },
+    {
+      "index": 68,
+      "bbox": [
+        1527,
+        2163,
+        1555,
+        2190
+      ],
+      "is_checked": false
+    },
+    {
+      "index": 69,
+      "bbox": [
+        1329,
+        1812,
+        1357,
+        1839
+      ],
+      "is_checked": false
+    },
+    {
+      "index": 70,
+      "bbox": [
+        1837,
+        3021,
+        1864,
+        3048
+      ],
+      "is_checked": false
+    },
+    {
+      "index": 71,
+      "bbox": [
+        1385,
+        2787,
+        1412,
+        2814
+      ],
+      "is_checked": false
+    },
+    {
+      "index": 72,
+      "bbox": [
+        1756,
+        2475,
+        1783,
+        2502
+      ],
+      "is_checked": false
+    },
+    {
+      "index": 73,
+      "bbox": [
+        2146,
+        2007,
+        2173,
+        2034
+      ],
+      "is_checked": false
+    },
+    {
+      "index": 74,
+      "bbox": [
+        2029,
+        2007,
+        2056,
+        2034
+      ],
+      "is_checked": false
+    },
+    {
+      "index": 75,
+      "bbox": [
+        1118,
+        2007,
+        1145,
+        2034
+      ],
+      "is_checked": false
+    },
+    {
+      "index": 76,
+      "bbox": [
+        2029,
+        1968,
+        2056,
+        1995
+      ],
+      "is_checked": false
+    },
+    {
+      "index": 77,
+      "bbox": [
+        1118,
+        1968,
+        1145,
+        1995
+      ],
+      "is_checked": false
+    },
+    {
+      "index": 78,
+      "bbox": [
+        1162,
+        516,
+        1191,
+        550
+      ],
+      "is_checked": true
+    }
+  ]
+}

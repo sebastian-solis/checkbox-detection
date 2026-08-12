@@ -1,0 +1,8 @@
+# Runtime dependencies, pinned exactly so the image that passes CI is the image
+# that ships. requirements-dev.txt adds the test-only packages.
+fastapi==0.141.1
+uvicorn[standard]==0.52.1
+opencv-python-headless==5.0.0.93
+numpy==2.5.2
+pillow==12.3.0
+python-multipart==0.0.32

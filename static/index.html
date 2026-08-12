@@ -1,0 +1,422 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Checkbox Review</title>
+<style>
+  /* Palette taken from homevision.co: indigo #4F46E5 on the zinc neutral scale,
+     Inter throughout, heavy headings. Inter is used when the viewer already has
+     it and falls back to the system stack rather than pulling a webfont, so the
+     page keeps working with no outbound requests. */
+  :root {
+    --indigo: #4f46e5;
+    --indigo-soft: #eef2ff;
+    --bg: #fafafa;
+    --panel: #ffffff;
+    --border: #e4e4e7;
+    --text: #18181b;
+    --muted: #71717a;
+    --checked: #059669;
+    --unchecked: #a1a1aa;
+    --review: #d97706;
+    --danger: #b91c1c;
+  }
+  @media (prefers-color-scheme: dark) {
+    :root {
+      --indigo: #818cf8; --indigo-soft: #1e1b4b;
+      --bg: #09090b; --panel: #18181b; --border: #27272a;
+      --text: #fafafa; --muted: #a1a1aa;
+      --checked: #34d399; --unchecked: #71717a; --review: #fbbf24;
+      --danger: #f87171;
+    }
+  }
+  * { box-sizing: border-box; }
+  [hidden] { display: none !important; }
+  body {
+    margin: 0; background: var(--bg); color: var(--text);
+    font: 14px/1.55 Inter, -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+    -webkit-font-smoothing: antialiased;
+  }
+  header {
+    background: var(--panel); border-bottom: 1px solid var(--border);
+    padding: 14px 22px; display: flex; align-items: center; gap: 14px; flex-wrap: wrap;
+  }
+  .mark {
+    width: 28px; height: 28px; border-radius: 8px; background: var(--indigo);
+    display: grid; place-items: center; color: #fff; font-weight: 700; font-size: 13px;
+    flex: none;
+  }
+  h1 { font-size: 15px; margin: 0; font-weight: 800; letter-spacing: -.02em; }
+  .sub { color: var(--muted); font-size: 12.5px; margin: 0; }
+  main { padding: 20px 22px 40px; max-width: 1500px; margin: 0 auto; }
+  .grid { display: grid; grid-template-columns: 340px minmax(0, 1fr); gap: 18px; align-items: start; }
+  @media (max-width: 980px) {
+    .grid { grid-template-columns: 1fr; }
+    /* Stacked, the page itself has to come first. Reading a list of a hundred
+       detections before you can see the document you are reviewing is the wrong
+       way round on a phone. */
+    .stage { order: -1; }
+    /* The list is no longer beside the document, so give it less height and let
+       the page scroll instead of trapping the reader in a nested scroller. */
+    .list { max-height: 320px; }
+  }
+  .card {
+    background: var(--panel); border: 1px solid var(--border);
+    border-radius: 16px; overflow: hidden;
+  }
+  .card h2 {
+    font-size: 12px; text-transform: uppercase; letter-spacing: .05em;
+    color: var(--muted); margin: 0; padding: 12px 14px 0; font-weight: 600;
+  }
+  .pad { padding: 14px; }
+  .drop {
+    border: 1.5px dashed var(--border); border-radius: 9px; padding: 20px 14px;
+    text-align: center; cursor: pointer; transition: .15s; display: block;
+  }
+  .drop:hover, .drop.over { border-color: var(--indigo); background: var(--indigo-soft); }
+  .drop b { display: block; font-size: 13.5px; margin-bottom: 2px; }
+  .drop span { color: var(--muted); font-size: 12px; }
+  input[type=file] { display: none; }
+  .privacy {
+    display: flex; align-items: center; gap: 6px; margin: 12px 0 0;
+    font-size: 11.5px; color: var(--muted);
+  }
+  .privacy svg { flex: none; color: var(--checked); }
+  .samples { display: flex; flex-wrap: wrap; gap: 6px; margin-top: 12px; }
+  .chip {
+    font-size: 11.5px; padding: 5px 9px; border-radius: 20px; cursor: pointer;
+    border: 1px solid var(--border); background: transparent; color: var(--muted);
+    font-family: inherit; transition: .15s;
+  }
+  .chip:hover { border-color: var(--indigo); color: var(--indigo); }
+  .tiles { display: grid; grid-template-columns: repeat(3, 1fr); gap: 8px; }
+  .tile {
+    background: var(--bg); border: 1px solid var(--border); border-radius: 8px;
+    padding: 10px 8px; text-align: center;
+  }
+  .tile b { display: block; font-size: 20px; font-weight: 700; font-variant-numeric: tabular-nums; letter-spacing: -.02em; }
+  .tile span { font-size: 11px; color: var(--muted); }
+  .tile.review b { color: var(--review); }
+  .banner {
+    margin-top: 12px; padding: 10px 12px; border-radius: 8px; font-size: 12.5px;
+    background: color-mix(in srgb, var(--review) 12%, transparent);
+    border: 1px solid color-mix(in srgb, var(--review) 40%, transparent);
+  }
+  .banner b { color: var(--review); }
+  .filters { display: flex; gap: 6px; padding: 0 14px 12px; flex-wrap: wrap; }
+  .filters button {
+    font-size: 11.5px; padding: 5px 10px; border-radius: 6px; cursor: pointer;
+    border: 1px solid var(--border); background: transparent; color: var(--muted);
+    font-family: inherit;
+  }
+  .filters button.on { background: var(--indigo); border-color: var(--indigo); color: #fff; }
+  .list { max-height: 460px; overflow-y: auto; border-top: 1px solid var(--border); }
+  .row {
+    display: grid; grid-template-columns: 16px 1fr auto; gap: 9px; align-items: center;
+    padding: 8px 14px; border-bottom: 1px solid var(--border); cursor: pointer;
+    font-size: 12.5px;
+  }
+  .row:hover { background: var(--indigo-soft); }
+  .row.active { background: var(--indigo-soft); box-shadow: inset 3px 0 0 var(--indigo); }
+  .swatch { width: 11px; height: 11px; border-radius: 3px; }
+  .row .meta { color: var(--muted); font-size: 11px; font-variant-numeric: tabular-nums; }
+  .flag {
+    font-size: 10px; padding: 2px 6px; border-radius: 20px; white-space: nowrap;
+    background: color-mix(in srgb, var(--review) 18%, transparent); color: var(--review);
+  }
+  .stage {
+    position: relative; background: var(--panel); border: 1px solid var(--border);
+    border-radius: 16px; padding: 12px; min-height: 420px;
+    display: flex; align-items: center; justify-content: center;
+  }
+  .canvas-wrap { position: relative; display: inline-block; max-width: 100%; }
+  .canvas-wrap img { display: block; max-width: 100%; height: auto; border-radius: 4px; }
+  .canvas-wrap canvas { position: absolute; inset: 0; width: 100%; height: 100%; }
+  .empty { color: var(--muted); text-align: center; font-size: 13px; }
+  .spinner {
+    width: 20px; height: 20px; border: 2px solid var(--border);
+    border-top-color: var(--indigo); border-radius: 50%;
+    animation: spin .7s linear infinite; margin: 0 auto 10px;
+  }
+  @keyframes spin { to { transform: rotate(360deg); } }
+  .error {
+    margin-top: 12px; padding: 10px 12px; border-radius: 8px; font-size: 12.5px;
+    background: color-mix(in srgb, var(--danger) 12%, transparent);
+    border: 1px solid color-mix(in srgb, var(--danger) 35%, transparent);
+    color: var(--danger);
+  }
+  .legend { display: flex; gap: 14px; margin-top: 10px; font-size: 11.5px; color: var(--muted); }
+  .legend i { width: 10px; height: 10px; border-radius: 3px; display: inline-block; margin-right: 5px; }
+  footer {
+    max-width: 1500px; margin: 0 auto; padding: 0 22px 30px;
+    color: var(--muted); font-size: 11.5px;
+  }
+  code { background: var(--bg); padding: 1px 5px; border-radius: 4px; font-size: 11.5px; }
+  a { color: var(--indigo); }
+</style>
+</head>
+<body>
+<header>
+  <div class="mark">☑</div>
+  <div>
+    <h1>Checkbox Review</h1>
+    <p class="sub">Extracts every checkbox from an appraisal page and flags the ones a human should still look at.</p>
+  </div>
+</header>
+
+<main>
+  <div class="grid">
+    <div>
+      <div class="card">
+        <div class="pad">
+          <label class="drop" id="drop" for="file">
+            <b>Drop an appraisal page</b>
+            <span>or click to browse. PNG, JPEG, TIFF, BMP, WEBP.</span>
+          </label>
+          <input type="file" id="file" accept="image/*">
+          <div class="samples">
+            <button class="chip" data-sample="uniform_residential_appraisal.png">Uniform Residential</button>
+            <button class="chip" data-sample="manufactured_home_appraisal.png">Manufactured Home</button>
+            <button class="chip" data-sample="market_conditions_addendum.png">Market Conditions</button>
+            <button class="chip" data-sample="neighborhood_site_section.png">Neighborhood</button>
+          </div>
+          <p class="privacy">
+            <svg viewBox="0 0 16 16" width="12" height="12" aria-hidden="true">
+              <path fill="currentColor" d="M8 1 3 3v4.5c0 3 2.1 5.8 5 6.5 2.9-.7 5-3.5 5-6.5V3L8 1Zm0 1.6 3.5 1.4v3.5c0 2.3-1.5 4.4-3.5 5-2-.6-3.5-2.7-3.5-5V4L8 2.6Z"/>
+            </svg>
+            Processed in memory, never written to disk, never logged.
+          </p>
+          <div id="error"></div>
+        </div>
+      </div>
+
+      <div class="card" id="summary" hidden style="margin-top:14px">
+        <h2>Summary</h2>
+        <div class="pad">
+          <div class="tiles">
+            <div class="tile"><b id="tChecked">0</b><span>Checked</span></div>
+            <div class="tile"><b id="tUnchecked">0</b><span>Unchecked</span></div>
+            <div class="tile review"><b id="tReview">0</b><span>Needs review</span></div>
+          </div>
+          <div class="banner" id="reviewBanner" hidden>
+            <b id="reviewCount">0</b> of <span id="reviewTotal">0</span> detections sit close to the
+            decision boundary. Those are the ones worth a human second look.
+          </div>
+          <div class="legend">
+            <span><i style="background:var(--checked)"></i>Checked</span>
+            <span><i style="background:var(--unchecked)"></i>Unchecked</span>
+            <span><i style="background:var(--review)"></i>Low confidence</span>
+          </div>
+        </div>
+      </div>
+
+      <div class="card" id="listCard" hidden style="margin-top:14px">
+        <h2>Detections</h2>
+        <div class="filters">
+          <button data-filter="all" class="on">All</button>
+          <button data-filter="checked">Checked</button>
+          <button data-filter="unchecked">Unchecked</button>
+          <button data-filter="review">Needs review</button>
+        </div>
+        <div class="list" id="list"></div>
+      </div>
+    </div>
+
+    <div class="stage" id="stage">
+      <div class="empty">Load a page to see its checkboxes.</div>
+    </div>
+  </div>
+</main>
+
+<footer>
+  Contract: <code>POST /detect</code> · full API reference at <a href="/docs">/docs</a>
+</footer>
+
+<script>
+// A detection is flagged for review when its confidence sits near the decision
+// boundary. That is the number a reviewer should spend their attention on:
+// everything else the system is already sure about.
+const REVIEW_CONFIDENCE = 0.75;
+
+const state = { boxes: [], filter: 'all', active: null, image: null };
+
+const fileInput = document.getElementById('file');
+const drop = document.getElementById('drop');
+const stage = document.getElementById('stage');
+const listEl = document.getElementById('list');
+const errorEl = document.getElementById('error');
+
+fileInput.addEventListener('change', () => {
+  if (fileInput.files.length) analyse(fileInput.files[0]);
+});
+
+['dragenter', 'dragover'].forEach(type =>
+  drop.addEventListener(type, event => { event.preventDefault(); drop.classList.add('over'); }));
+['dragleave', 'drop'].forEach(type =>
+  drop.addEventListener(type, event => { event.preventDefault(); drop.classList.remove('over'); }));
+drop.addEventListener('drop', event => {
+  const file = event.dataTransfer.files[0];
+  if (file) analyse(file);
+});
+
+document.querySelectorAll('[data-sample]').forEach(chip =>
+  chip.addEventListener('click', async () => {
+    const name = chip.dataset.sample;
+    const response = await fetch(`/samples/${name}`);
+    analyse(new File([await response.blob()], name, { type: 'image/png' }));
+  }));
+
+document.querySelectorAll('[data-filter]').forEach(button =>
+  button.addEventListener('click', () => {
+    document.querySelectorAll('[data-filter]').forEach(other => other.classList.remove('on'));
+    button.classList.add('on');
+    state.filter = button.dataset.filter;
+    renderList();
+    draw();
+  }));
+
+function showError(message) {
+  errorEl.innerHTML = `<div class="error">${message}</div>`;
+}
+
+async function analyse(file) {
+  errorEl.innerHTML = '';
+  document.getElementById('summary').hidden = true;
+  document.getElementById('listCard').hidden = true;
+  stage.innerHTML = '<div class="empty"><div class="spinner"></div>Reading the page…</div>';
+
+  const body = new FormData();
+  body.append('file', file);
+
+  let payload;
+  try {
+    const response = await fetch('/detect/debug', { method: 'POST', body });
+    payload = await response.json();
+    if (!response.ok) {
+      stage.innerHTML = '<div class="empty">Nothing to show.</div>';
+      showError(payload.detail || 'The page could not be processed.');
+      return;
+    }
+  } catch (err) {
+    stage.innerHTML = '<div class="empty">Nothing to show.</div>';
+    showError('Could not reach the service.');
+    return;
+  }
+
+  state.boxes = payload.boxes.map((box, index) => ({ ...box, index }));
+  state.active = null;
+
+  // The original page is displayed from the local file and the overlay is drawn
+  // on a canvas above it, so filtering and highlighting cost no round trip.
+  const image = new Image();
+  image.onload = () => {
+    stage.innerHTML = '';
+    const wrap = document.createElement('div');
+    wrap.className = 'canvas-wrap';
+    const canvas = document.createElement('canvas');
+    wrap.append(image, canvas);
+    stage.appendChild(wrap);
+    state.image = { element: image, canvas };
+    draw();
+  };
+  image.src = URL.createObjectURL(file);
+  image.alt = 'Appraisal page with detected checkboxes outlined';
+
+  renderSummary(payload);
+  renderList();
+}
+
+function needsReview(box) {
+  return box.confidence < REVIEW_CONFIDENCE;
+}
+
+function visibleBoxes() {
+  if (state.filter === 'checked') return state.boxes.filter(box => box.is_checked);
+  if (state.filter === 'unchecked') return state.boxes.filter(box => !box.is_checked);
+  if (state.filter === 'review') return state.boxes.filter(needsReview);
+  return state.boxes;
+}
+
+function renderSummary(payload) {
+  const flagged = state.boxes.filter(needsReview).length;
+  document.getElementById('tChecked').textContent = payload.checked_count;
+  document.getElementById('tUnchecked').textContent = payload.unchecked_count;
+  document.getElementById('tReview').textContent = flagged;
+  document.getElementById('reviewCount').textContent = flagged;
+  document.getElementById('reviewTotal').textContent = state.boxes.length;
+  document.getElementById('reviewBanner').hidden = flagged === 0;
+  document.getElementById('summary').hidden = false;
+}
+
+function renderList() {
+  const boxes = visibleBoxes();
+  document.getElementById('listCard').hidden = state.boxes.length === 0;
+
+  listEl.innerHTML = boxes.map(box => {
+    const colour = box.is_checked ? 'var(--checked)' : 'var(--unchecked)';
+    const flag = needsReview(box) ? '<span class="flag">review</span>' : '';
+    return `
+      <div class="row ${state.active === box.index ? 'active' : ''}" data-index="${box.index}">
+        <span class="swatch" style="background:${colour}"></span>
+        <span>
+          ${box.is_checked ? 'Checked' : 'Unchecked'}
+          <span class="meta">· ink ${box.ink_ratio.toFixed(3)} · conf ${box.confidence.toFixed(2)}</span>
+        </span>
+        ${flag}
+      </div>`;
+  }).join('') || '<div class="pad empty">No detections in this filter.</div>';
+
+  listEl.querySelectorAll('.row').forEach(row =>
+    row.addEventListener('click', () => {
+      state.active = Number(row.dataset.index);
+      renderList();
+      draw();
+    }));
+}
+
+function draw() {
+  if (!state.image) return;
+  const { element, canvas } = state.image;
+
+  // Match the canvas to the rendered size so overlay coordinates line up with
+  // whatever width the browser gave the image.
+  const rect = element.getBoundingClientRect();
+  const ratio = window.devicePixelRatio || 1;
+  canvas.width = rect.width * ratio;
+  canvas.height = rect.height * ratio;
+
+  const context = canvas.getContext('2d');
+  context.setTransform(ratio, 0, 0, ratio, 0, 0);
+  context.clearRect(0, 0, rect.width, rect.height);
+
+  const scale = rect.width / element.naturalWidth;
+  const styles = getComputedStyle(document.documentElement);
+  const palette = {
+    checked: styles.getPropertyValue('--checked').trim(),
+    unchecked: styles.getPropertyValue('--unchecked').trim(),
+    review: styles.getPropertyValue('--review').trim(),
+    indigo: styles.getPropertyValue('--indigo').trim(),
+  };
+
+  for (const box of visibleBoxes()) {
+    const [x1, y1, x2, y2] = box.bbox;
+    const isActive = state.active === box.index;
+    context.strokeStyle = isActive
+      ? palette.indigo
+      : needsReview(box) ? palette.review
+      : box.is_checked ? palette.checked : palette.unchecked;
+    context.lineWidth = isActive ? 3 : 1.6;
+    context.strokeRect(x1 * scale, y1 * scale, (x2 - x1) * scale, (y2 - y1) * scale);
+
+    if (isActive) {
+      context.fillStyle = palette.indigo + '22';
+      context.fillRect(x1 * scale, y1 * scale, (x2 - x1) * scale, (y2 - y1) * scale);
+    }
+  }
+}
+
+window.addEventListener('resize', draw);
+</script>
+</body>
+</html>

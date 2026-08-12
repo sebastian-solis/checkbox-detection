@@ -1,0 +1,437 @@
+{
+  "source_image": "neighborhood_site_section.png",
+  "reviewed": true,
+  "note": "Reviewed by hand against eval/sheets/ and zoomed crops. Removed 6 false positives (one table corner, four letters of the vertical NEIGHBORHOOD sidebar rendered white-on-black, one body-text glyph), corrected one faint X read as empty, and added one checkbox the detector missed.",
+  "boxes": [
+    {
+      "index": 0,
+      "bbox": [
+        282,
+        182,
+        306,
+        208
+      ],
+      "is_checked": false
+    },
+    {
+      "index": 1,
+      "bbox": [
+        196,
+        643,
+        220,
+        667
+      ],
+      "is_checked": true
+    },
+    {
+      "index": 2,
+      "bbox": [
+        678,
+        643,
+        701,
+        667
+      ],
+      "is_checked": true
+    },
+    {
+      "index": 3,
+      "bbox": [
+        196,
+        613,
+        220,
+        636
+      ],
+      "is_checked": true
+    },
+    {
+      "index": 4,
+      "bbox": [
+        237,
+        491,
+        260,
+        515
+      ],
+      "is_checked": true
+    },
+    {
+      "index": 5,
+      "bbox": [
+        693,
+        126,
+        716,
+        150
+      ],
+      "is_checked": true
+    },
+    {
+      "index": 6,
+      "bbox": [
+        283,
+        126,
+        306,
+        150
+      ],
+      "is_checked": true
+    },
+    {
+      "index": 7,
+      "bbox": [
+        1263,
+        735,
+        1286,
+        758
+      ],
+      "is_checked": true
+    },
+    {
+      "index": 8,
+      "bbox": [
+        1174,
+        735,
+        1197,
+        758
+      ],
+      "is_checked": false
+    },
+    {
+      "index": 9,
+      "bbox": [
+        769,
+        704,
+        792,
+        727
+      ],
+      "is_checked": false
+    },
+    {
+      "index": 10,
+      "bbox": [
+        680,
+        704,
+        703,
+        727
+      ],
+      "is_checked": true
+    },
+    {
+      "index": 11,
+      "bbox": [
+        447,
+        674,
+        470,
+        697
+      ],
+      "is_checked": true
+    },
+    {
+      "index": 12,
+      "bbox": [
+        364,
+        674,
+        387,
+        697
+      ],
+      "is_checked": false
+    },
+    {
+      "index": 13,
+      "bbox": [
+        1478,
+        613,
+        1501,
+        636
+      ],
+      "is_checked": false
+    },
+    {
+      "index": 14,
+      "bbox": [
+        1387,
+        613,
+        1410,
+        636
+      ],
+      "is_checked": true
+    },
+    {
+      "index": 15,
+      "bbox": [
+        756,
+        613,
+        779,
+        636
+      ],
+      "is_checked": false
+    },
+    {
+      "index": 16,
+      "bbox": [
+        678,
+        613,
+        701,
+        636
+      ],
+      "is_checked": true
+    },
+    {
+      "index": 17,
+      "bbox": [
+        275,
+        613,
+        298,
+        636
+      ],
+      "is_checked": true
+    },
+    {
+      "index": 18,
+      "bbox": [
+        1187,
+        522,
+        1210,
+        545
+      ],
+      "is_checked": false
+    },
+    {
+      "index": 19,
+      "bbox": [
+        1098,
+        522,
+        1121,
+        545
+      ],
+      "is_checked": true
+    },
+    {
+      "index": 20,
+      "bbox": [
+        331,
+        491,
+        354,
+        514
+      ],
+      "is_checked": false
+    },
+    {
+      "index": 21,
+      "bbox": [
+        979,
+        157,
+        1002,
+        180
+      ],
+      "is_checked": false
+    },
+    {
+      "index": 22,
+      "bbox": [
+        693,
+        157,
+        716,
+        180
+      ],
+      "is_checked": true
+    },
+    {
+      "index": 23,
+      "bbox": [
+        414,
+        157,
+        437,
+        180
+      ],
+      "is_checked": false
+    },
+    {
+      "index": 24,
+      "bbox": [
+        156,
+        157,
+        179,
+        180
+      ],
+      "is_checked": false
+    },
+    {
+      "index": 25,
+      "bbox": [
+        979,
+        127,
+        1002,
+        150
+      ],
+      "is_checked": false
+    },
+    {
+      "index": 26,
+      "bbox": [
+        414,
+        127,
+        437,
+        150
+      ],
+      "is_checked": false
+    },
+    {
+      "index": 27,
+      "bbox": [
+        156,
+        127,
+        179,
+        150
+      ],
+      "is_checked": false
+    },
+    {
+      "index": 28,
+      "bbox": [
+        979,
+        96,
+        1002,
+        119
+      ],
+      "is_checked": false
+    },
+    {
+      "index": 29,
+      "bbox": [
+        693,
+        96,
+        716,
+        119
+      ],
+      "is_checked": true
+    },
+    {
+      "index": 30,
+      "bbox": [
+        414,
+        96,
+        437,
+        119
+      ],
+      "is_checked": false
+    },
+    {
+      "index": 31,
+      "bbox": [
+        283,
+        96,
+        306,
+        119
+      ],
+      "is_checked": true
+    },
+    {
+      "index": 32,
+      "bbox": [
+        156,
+        96,
+        179,
+        119
+      ],
+      "is_checked": false
+    },
+    {
+      "index": 33,
+      "bbox": [
+        1478,
+        644,
+        1501,
+        666
+      ],
+      "is_checked": false
+    },
+    {
+      "index": 34,
+      "bbox": [
+        1387,
+        644,
+        1410,
+        666
+      ],
+      "is_checked": false
+    },
+    {
+      "index": 35,
+      "bbox": [
+        756,
+        644,
+        779,
+        666
+      ],
+      "is_checked": false
+    },
+    {
+      "index": 36,
+      "bbox": [
+        275,
+        644,
+        298,
+        666
+      ],
+      "is_checked": false
+    },
+    {
+      "index": 37,
+      "bbox": [
+        843,
+        491,
+        865,
+        514
+      ],
+      "is_checked": false
+    },
+    {
+      "index": 38,
+      "bbox": [
+        848,
+        157,
+        870,
+        180
+      ],
+      "is_checked": false
+    },
+    {
+      "index": 39,
+      "bbox": [
+        848,
+        127,
+        870,
+        150
+      ],
+      "is_checked": false
+    },
+    {
+      "index": 40,
+      "bbox": [
+        848,
+        96,
+        870,
+        119
+      ],
+      "is_checked": false
+    },
+    {
+      "index": 41,
+      "bbox": [
+        713,
+        493,
+        736,
+        514
+      ],
+      "is_checked": true
+    },
+    {
+      "index": 42,
+      "bbox": [
+        282,
+        157,
+        305,
+        182
+      ],
+      "is_checked": true
+    }
+  ]
+}

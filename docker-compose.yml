@@ -1,0 +1,17 @@
+services:
+  checkbox-detection:
+    build: .
+    image: checkbox-detection:1.0.0
+    ports:
+      - "8000:8000"
+    environment:
+      # Detection thresholds can be tuned per deployment without a rebuild.
+      # Defaults live in app/config.py.
+      CHECKED_INK_THRESHOLD: "0.14"
+      MAX_FILE_BYTES: "20971520"
+    read_only: true
+    tmpfs:
+      - /tmp
+    security_opt:
+      - no-new-privileges:true
+    restart: unless-stopped
