@@ -280,6 +280,108 @@ cells with low confidence, which is closest to what the service does now.
 This is exactly the kind of question I would rather ask than answer unilaterally,
 because the right choice depends on how MIRA consumes the output downstream.
 
+## How this would run on AWS
+
+The demo lives on Render because it is the reviewer's first step, and the
+reviewer does not owe HomeVision an AWS account to try the take-home. On the
+target stack, which the "Why HomeVision" brief describes as Go, React,
+Python, AWS with Lambda and SQS, PostgreSQL, Temporal and Datadog, the
+architecture I would design is different. What follows is that architecture
+and the reasoning against each piece.
+
+```mermaid
+flowchart TB
+    C[Client / MIRA worker] -- 1. request presigned URL --> API[Detection API<br/>ECS Fargate behind ALB]
+    API -- 2. presigned PUT --> C
+    C -- 3. upload document direct --> S3[(S3 - encrypted at rest,<br/>lifecycle expires in 24h)]
+    S3 -- 4. ObjectCreated event --> EB{{EventBridge}}
+    EB --> SQS[[SQS FIFO<br/>per-lender partition key]]
+    SQS -- 5. dequeue --> W[Detection worker<br/>ECS Fargate, autoscaled on queue depth]
+    W -- 6. read image, in memory --> S3
+    W -- 7. write result --> DDB[(DynamoDB<br/>result cache, TTL 7d)]
+    W -- metrics + logs --> CW[[CloudWatch + X-Ray]]
+    C -- 8. poll or webhook --> API
+    API -- 9. read cached result --> DDB
+
+    WAF[WAF + Shield]:::edge --> ALB[Application Load Balancer]
+    ALB --> API
+    CF[CloudFront for the UI]:::edge --> S3UI[(S3 static site)]
+
+    classDef edge fill:#eef2ff,stroke:#4f46e5;
+```
+
+### Why each piece
+
+- **ECS Fargate over Lambda.** OpenCV and pypdfium2 push the image large, and
+  Fargate lets me run the same Docker image that ships here without rebuilding
+  it as a Lambda layer. Fargate also survives long PDFs (Lambda's 15-minute
+  cap is fine, its 6 MB payload limit is not). Concurrency scales linearly
+  with queue depth via Application Auto Scaling on `ApproximateNumberOfMessages`.
+  Cold starts are the tradeoff and are addressed with minimum-1 tasks per AZ.
+
+- **S3 presigned uploads over multipart to the API.** A borrower document can
+  be tens of megabytes; routing it through the API burns egress and memory on
+  every node. Presigned PUTs let the browser upload directly to S3 in a bucket
+  owned by us, encrypted with SSE-KMS, with a lifecycle rule that expires the
+  object 24 hours after upload. The API never sees the bytes; it hands out an
+  authorisation URL and reads from S3 when the worker picks up the job.
+
+- **SQS + EventBridge for the pipeline.** MIRA processes loan files that
+  arrive as bursts, not steady traffic. Fronting the worker with SQS
+  decouples the arrival rate from the processing rate and gives me DLQ,
+  redrive, and per-message retry semantics for free. FIFO ordering with a
+  per-lender partition key means one lender's noisy tenant does not starve
+  the others.
+
+- **DynamoDB with TTL over a relational cache.** The result of a detection is
+  a small JSON document keyed by image hash. DynamoDB with a 7-day TTL is the
+  right shape: single-digit millisecond reads, no schema to migrate, and the
+  TTL is the retention policy in one line.
+
+- **CloudFront + WAF at the edge.** Rate limiting, geo policy and OWASP rule
+  sets belong at the edge, not in a Python middleware. The in-process
+  `RateLimitMiddleware` we ship today is the defence-in-depth version of the
+  same idea; production has both.
+
+- **Bedrock Guardrails and Amazon Comprehend before persistence.** The
+  service ships no ML today, but the moment a vision-language backend is
+  wired in (my writeup argues that would be the second-opinion pass on
+  low-confidence detections), the model input needs a PII filter and the
+  model output needs a safety filter. Comprehend detects PII on any text
+  read from documents, and Bedrock Guardrails masks it before it reaches
+  a model call.
+
+- **Least-privilege IAM per component.** The API role can `sts:GetSessionToken`
+  for the presigner and `dynamodb:PutItem`/`GetItem` on the result table.
+  The worker role can `s3:GetObject` on the upload bucket, `sqs:ReceiveMessage`
+  on the queue, and write to DynamoDB and CloudWatch. Neither can `s3:DeleteObject`
+  on the upload bucket; lifecycle owns that.
+
+- **Nothing traverses the internet inside the VPC.** S3, SQS, DynamoDB,
+  CloudWatch and Bedrock are reachable via VPC endpoints (interface endpoints
+  for the API-based services, gateway endpoint for S3), so a document never
+  leaves the AWS backbone between upload and result.
+
+- **CloudTrail with log file validation.** Every AWS API call, including the
+  presigner issuing URLs, is captured with integrity verification. Combined
+  with request_id correlation from CloudWatch, that gives an audit trail
+  linking a borrower request to the specific worker that processed it and the
+  exact S3 object it read.
+
+- **Multi-AZ, encryption in transit is TLS 1.2+ everywhere, KMS CMK for
+  every stateful resource.** These are the defaults, and they are the defaults
+  because in a regulated setting like mortgage underwriting, not having them
+  is a finding.
+
+### What Render buys and what it costs
+
+Render is the right choice for a take-home: no AWS account needed for review,
+no billing to configure, Docker Compose file ports directly. In exchange we
+give up VPC isolation, KMS control, the presigned-URL pattern, the audit
+trail, and any real horizontal scaling. That is a fair trade for a demo. It
+would not be a fair trade for MIRA in production, and the section above is
+the answer to "how would this actually live at HomeVision".
+
 ## Going past the brief: PDF input
 
 The challenge asks for images and `POST /detect` takes images and nothing else,

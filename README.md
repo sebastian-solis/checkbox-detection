@@ -355,6 +355,11 @@ addresses and financial detail. Every design decision has to answer to that.
 
 `WRITEUP.md` argues each of these against the specific threat it answers.
 
+- **Designed for AWS in production.** `WRITEUP.md` includes a full target
+  architecture on ECS Fargate + S3 presigned uploads + SQS + DynamoDB, with
+  the Render deployment framed as a reviewer-friendly choice, not the
+  intended production shape.
+
 ---
 
 ## Project layout
