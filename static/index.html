@@ -335,6 +335,7 @@
             <b>Drop an appraisal page or PDF</b>
             <span>or click to browse. PDF, PNG, JPEG, TIFF, BMP, WEBP.</span>
           </label>
+          <input type="file" id="file" accept="image/*,application/pdf">
           <p class="privacy">
             <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="M12 2 4 5v6c0 5 3.5 9.4 8 11 4.5-1.6 8-6 8-11V5l-8-3z"/></svg>
             Processed in memory, never written to disk, never logged.
@@ -409,6 +410,8 @@
   <div>240 checkboxes hand-verified &middot; F1 0.988 &middot; classification 0.996</div>
 </footer>
 
-<script src="/static/app.js" defer></script>
+<!-- Versioned so a redeploy invalidates any browser cache of the previous
+     app.js. Bump when static/app.js changes. -->
+<script src="/static/app.js?v=5" defer></script>
 </body>
 </html>
