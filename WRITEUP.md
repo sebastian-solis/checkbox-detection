@@ -373,6 +373,61 @@ flowchart TB
   because in a regulated setting like mortgage underwriting, not having them
   is a finding.
 
+### Document AI on AWS: which service does what
+
+The infrastructure above is the plumbing. The document-specific layer is a
+separate decision, and there are half a dozen managed services on AWS that
+each own a slice of what MIRA does. This service is one of them, and it is
+worth naming the others explicitly so the architecture is not "reinvent
+everything in Python":
+
+- **Amazon Textract** for OCR and form structure. `AnalyzeDocument` with
+  the `FORMS` feature returns key-value pairs, tables, and
+  `SELECTION_ELEMENT` blocks with the same bounding box and
+  `SelectionStatus` that this service produces. That is why it is wired here
+  as an optional backend behind `?engine=textract`, and why the argument for
+  making it the default is a per-lender cost and latency decision rather
+  than an accuracy one. `AnalyzeExpense` and `AnalyzeID` cover the specific
+  form types in the loan file that are not appraisals.
+
+- **Amazon Bedrock** as the model host. If MIRA adopts a vision-language
+  second opinion on the low-confidence detections this service flags (the
+  "needs review" queue in the UI), Bedrock is the ceremony-free way to run
+  Anthropic Claude, Amazon Nova or Meta Llama Vision on those specific
+  pages, with per-model provisioned throughput sized to the actual review
+  volume rather than the total volume.
+
+- **Bedrock Guardrails** for the PII / DLP filter on model input and
+  output. This is the seat belt for the moment a page containing a full SSN
+  ends up in a prompt: the guardrail refuses, or masks, before the request
+  ever reaches the model, and it is auditable in CloudWatch.
+
+- **Amazon Comprehend** for `DetectPiiEntities` on any text pulled off a
+  page. Runs pre-persistence, so a borrower's SSN, driver license or bank
+  account number never lands in the result cache or the search index in the
+  clear. Custom classifiers can be trained per document type when the
+  built-in entity set is not enough.
+
+- **Amazon Rekognition** for pre-processing. `DetectDocumentOrientation`
+  fixes rotated scans before detection runs, and quality checks flag pages
+  too blurry to trust before they consume a Textract call.
+
+- **Amazon Augmented AI (A2I)** for the human-in-the-loop workflow. The
+  UI I ship here surfaces the low-confidence detections a reviewer should
+  look at; A2I is how that queue would be wired to real underwriters at
+  volume, with SLA-tracked review, audit trail and the label loop back
+  into a training set.
+
+- **S3 Object Lambda** if the redacted view of a document ever needs to be
+  served alongside the original: the same S3 GET returns different bytes
+  based on the caller's IAM principal, so an underwriter sees the full page
+  and a downstream integration sees only the checkbox states.
+
+The pattern is deliberate: **managed services do the heavy lifting they own,
+and this service handles the last mile that they do not cover well**, which
+here is bounded, deterministic, auditable pixel-space geometry. That is a
+different failure mode from a model call and it belongs in a different box.
+
 ### What Render buys and what it costs
 
 Render is the right choice for a take-home: no AWS account needed for review,
