@@ -6,6 +6,9 @@ HomeVision backend take-home challenge.
 Given a document image, the service returns the pixel coordinates of every
 checkbox it finds and whether each one is marked.
 
+> **Live demo:** https://checkbox-detection.onrender.com 
+> Free tier on 0.1 CPU: first request wakes a cold container (~60s), later requests run in 1-4s. Local Docker runs in tens of milliseconds.
+
 ---
 
 ## Quick start
