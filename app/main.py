@@ -12,12 +12,18 @@ import time
 import uuid
 from pathlib import Path
 
+import numpy as np
 from fastapi import FastAPI, File, Query, Request, UploadFile
 from fastapi.responses import FileResponse, JSONResponse, Response
 from fastapi.staticfiles import StaticFiles
 
-from app.config import DetectionSettings, PdfSettings, UploadSettings
+from app.config import DetectionSettings, NetworkSettings, PdfSettings, UploadSettings
 from app.detection import classical, pdf, render, textract
+from app.http_security import (
+    RateLimitMiddleware,
+    SecurityHeadersMiddleware,
+    configure_cors,
+)
 from app.schemas import (
     BatchDetectResponse,
     BatchItem,
@@ -46,6 +52,7 @@ logger = logging.getLogger("checkbox-detection")
 detection_settings = DetectionSettings.from_env()
 upload_settings = UploadSettings.from_env()
 pdf_settings = PdfSettings.from_env()
+network_settings = NetworkSettings.from_env()
 
 app = FastAPI(
     title="Checkbox Detection",
@@ -55,6 +62,19 @@ app = FastAPI(
         "Uploads are processed in memory and never written to disk."
     ),
 )
+
+
+# Middleware order matters: outermost runs first on the request and last on the
+# response. Security headers go outside everything so a rejected request still
+# leaves with hardening applied; rate limiting sits inside headers so a 429 also
+# gets them; the request id is innermost because the rest of the app reads it.
+app.add_middleware(SecurityHeadersMiddleware)
+app.add_middleware(
+    RateLimitMiddleware,
+    max_requests=network_settings.rate_limit_max,
+    window_seconds=network_settings.rate_limit_window_seconds,
+)
+configure_cors(app, network_settings.allowed_origins)
 
 
 @app.middleware("http")
@@ -297,7 +317,28 @@ async def detect_batch(
 
 @app.get("/health", response_model=HealthResponse, summary="Liveness probe")
 async def health() -> HealthResponse:
+    """Cheap liveness check: the process is running and can serve HTTP.
+
+    Deliberately does no work: this is what a load balancer polls every few
+    seconds and it must not exercise the detection pipeline, or a burst of
+    probes becomes a denial of service against itself.
+    """
     return HealthResponse(status="ok", version=VERSION)
+
+
+@app.get("/ready", response_model=HealthResponse, summary="Readiness probe")
+async def ready() -> HealthResponse:
+    """Deeper check: the detector actually runs.
+
+    A liveness probe that only pings the socket cannot notice a container that
+    started, opened the port, and then failed to import OpenCV or lost access
+    to a shared library. Rendering a tiny synthetic page and running detection
+    on it exercises the real code path and takes under a millisecond, so it is
+    cheap enough to run per probe.
+    """
+    canvas = np.full((160, 240, 3), 255, dtype=np.uint8)
+    classical.detect(canvas, detection_settings)
+    return HealthResponse(status="ready", version=VERSION)
 
 
 @app.get("/", include_in_schema=False)

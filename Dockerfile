@@ -20,10 +20,14 @@ COPY static/ ./static/
 # demonstrate on without the reviewer hunting for a file.
 COPY samples/ ./samples/
 
-# Run unprivileged. The service writes nothing to disk, so it needs no volumes
-# and no write access anywhere.
-RUN useradd --system --uid 10001 --create-home appuser
-USER appuser
+# Run unprivileged. A dedicated uid inside the container is one of the
+# defence-in-depth layers documented in WRITEUP.md: even if an attacker got
+# code execution inside the image, they land as appuser on a read-only
+# filesystem, with no home to write to and no capabilities to escalate.
+RUN groupadd --gid 10001 appgrp \
+ && useradd --uid 10001 --gid 10001 --home-dir /nonexistent \
+    --no-create-home --shell /usr/sbin/nologin appuser
+USER appuser:appgrp
 
 EXPOSE 8000
 

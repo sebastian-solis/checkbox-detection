@@ -191,11 +191,11 @@ pip install -r requirements-dev.txt
 pytest -q
 ```
 
-58 tests covering the geometry primitives, the detector against synthetic pages
+67 tests covering the geometry primitives, the detector against synthetic pages
 with known answers, the HTTP contract, and every upload rejection path.
 
 ```
-58 passed in 1.66s
+67 passed in 2.07s
 ```
 
 ---
@@ -266,6 +266,9 @@ resolutions rather than assuming 300 DPI.
 | `DESKEW_ENABLED` | `true` | Straighten the page before extracting lines |
 | `MAX_FILE_BYTES` | `20971520` | Upload size ceiling |
 | `MAX_PIXELS` | `50000000` | Decoded resolution ceiling |
+| `ALLOWED_ORIGINS` | `""` | Comma-separated CORS allowlist (empty = deny all) |
+| `RATE_LIMIT_MAX` | `60` | Requests per client IP inside the window |
+| `RATE_LIMIT_WINDOW_SECONDS` | `60` | Sliding-window length for the rate limit |
 | `MAX_BATCH_FILES` | `25` | Images accepted in one batch request |
 | `PDF_RENDER_DPI` | `200` | Resolution PDF pages are rasterised at |
 | `PDF_MAX_PAGES` | `50` | Page ceiling for a submitted PDF |
@@ -318,6 +321,33 @@ property addresses and lender details. That shaped three decisions.
   both file size and decoded resolution are capped before any work happens.
 
 `WRITEUP.md` covers what production would additionally require.
+
+---
+
+## Security posture
+
+The service handles mortgage appraisals, which carry borrower names, property
+addresses and financial detail. Every design decision has to answer to that.
+
+- **Upload validation on bytes, not labels.** The `Content-Type` header and the
+  filename are attacker-controlled; magic bytes decide the format. File size
+  and decoded resolution are capped before any decoding, closing the
+  decompression-bomb path.
+- **In-memory only.** Nothing is written to disk. The container runs read-only
+  as a dedicated non-root user, with tmpfs on `/tmp` and `no-new-privileges`.
+- **Content never logged.** Logs carry a request id, dimensions, timing and
+  detection counts. Never the document body, never the filename.
+- **Errors never echo the payload.** Regression-tested.
+- **HTTP hardening.** Security headers on every response, Content-Security-
+  Policy locked to `'self'` on the HTML, CORS defaults to an empty allowlist,
+  per-IP rate limiting that respects `X-Forwarded-For` behind a proxy.
+- **Supply chain.** Dependencies pinned exactly, image scanned with Trivy in
+  CI on every push, `HIGH` and `CRITICAL` findings break the build.
+- **Managed AI as an opt-in.** Textract is a swappable backend, off by
+  default, so borrower documents do not leave the process unless a caller
+  explicitly asks for it.
+
+`WRITEUP.md` argues each of these against the specific threat it answers.
 
 ---
 

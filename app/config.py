@@ -138,3 +138,29 @@ class PdfSettings:
             render_dpi=_env_int("PDF_RENDER_DPI", cls.render_dpi),
             max_pages=_env_int("PDF_MAX_PAGES", cls.max_pages),
         )
+
+
+@dataclass(frozen=True)
+class NetworkSettings:
+    """Controls that live at the HTTP boundary rather than at the pipeline.
+
+    Defaults are deliberately strict: no cross-origin callers, a modest rate
+    limit for the shared free instance. An operator relaxes them per deployment
+    with environment variables rather than editing the code.
+    """
+
+    allowed_origins: tuple[str, ...] = ()
+    rate_limit_max: int = 60
+    rate_limit_window_seconds: float = 60.0
+
+    @classmethod
+    def from_env(cls) -> NetworkSettings:
+        raw_origins = os.getenv("ALLOWED_ORIGINS", "")
+        origins = tuple(o.strip() for o in raw_origins.split(",") if o.strip())
+        return cls(
+            allowed_origins=origins,
+            rate_limit_max=_env_int("RATE_LIMIT_MAX", cls.rate_limit_max),
+            rate_limit_window_seconds=_env_float(
+                "RATE_LIMIT_WINDOW_SECONDS", cls.rate_limit_window_seconds
+            ),
+        )

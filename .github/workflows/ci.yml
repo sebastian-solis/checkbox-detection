@@ -42,13 +42,39 @@ jobs:
       - name: Build the image
         run: docker build -t checkbox-detection:ci .
 
+      # Scan the built image for known CVEs before it can be shipped. This is
+      # the supply-chain leg of the security posture argued in WRITEUP.md:
+      # pinned dependencies stop a base image from silently changing, and
+      # scanning catches a pinned dependency that was safe last week and is
+      # not any more.
+      - name: Scan image with Trivy (fail on HIGH or CRITICAL)
+        uses: aquasecurity/trivy-action@0.28.0
+        with:
+          image-ref: checkbox-detection:ci
+          format: table
+          exit-code: "1"
+          severity: HIGH,CRITICAL
+          ignore-unfixed: true
+
       - name: Run it and check the contract
         run: |
           docker run -d --name svc -p 8000:8000 checkbox-detection:ci
           for _ in $(seq 1 30); do
             curl -fsS http://localhost:8000/health && break || sleep 2
           done
+
+          # Contract check against a real sample
           curl -fsS -X POST http://localhost:8000/detect \
             -F "file=@samples/uniform_residential_appraisal.png" \
             | python -c "import json,sys; d=json.load(sys.stdin); assert set(d)=={'boxes'}; assert d['boxes']; print(f\"contract ok, {len(d['boxes'])} boxes\")"
+
+          # Security headers must be present on the live response, not just
+          # in unit tests: a middleware ordering mistake would let unit tests
+          # pass and production ship bare.
+          curl -fsS -D headers.txt -o /dev/null http://localhost:8000/health
+          grep -qi '^x-content-type-options: nosniff' headers.txt
+          grep -qi '^x-frame-options: DENY' headers.txt
+          grep -qi '^strict-transport-security:' headers.txt
+          echo "security headers verified on live response"
+
           docker rm -f svc

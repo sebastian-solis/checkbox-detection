@@ -8,210 +8,363 @@
   /* Palette taken from homevision.co: indigo #4F46E5 on the zinc neutral scale,
      Inter throughout, heavy headings. Inter is used when the viewer already has
      it and falls back to the system stack rather than pulling a webfont, so the
-     page keeps working with no outbound requests. */
+     page keeps working with no outbound requests and satisfies the Content
+     Security Policy locked to 'self'. */
   :root {
     --indigo: #4f46e5;
     --indigo-soft: #eef2ff;
+    --indigo-line: #c7d2fe;
     --bg: #fafafa;
     --panel: #ffffff;
+    --panel-hover: #f4f4f5;
     --border: #e4e4e7;
+    --border-strong: #d4d4d8;
     --text: #18181b;
     --muted: #71717a;
     --checked: #059669;
     --unchecked: #a1a1aa;
     --review: #d97706;
     --danger: #b91c1c;
+    --shadow: 0 1px 2px rgba(24,24,27,.04), 0 4px 12px rgba(24,24,27,.03);
   }
   @media (prefers-color-scheme: dark) {
     :root {
-      --indigo: #818cf8; --indigo-soft: #1e1b4b;
-      --bg: #09090b; --panel: #18181b; --border: #27272a;
+      --indigo: #818cf8; --indigo-soft: #1e1b4b; --indigo-line: #312e81;
+      --bg: #09090b; --panel: #18181b; --panel-hover: #27272a;
+      --border: #27272a; --border-strong: #3f3f46;
       --text: #fafafa; --muted: #a1a1aa;
-      --checked: #34d399; --unchecked: #71717a; --review: #fbbf24;
-      --danger: #f87171;
+      --checked: #34d399; --unchecked: #71717a; --review: #fbbf24; --danger: #f87171;
+      --shadow: 0 1px 2px rgba(0,0,0,.3), 0 4px 12px rgba(0,0,0,.25);
     }
   }
   * { box-sizing: border-box; }
   [hidden] { display: none !important; }
+  html, body { margin: 0; padding: 0; }
   body {
-    margin: 0; background: var(--bg); color: var(--text);
+    background: var(--bg); color: var(--text);
     font: 14px/1.55 Inter, -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
     -webkit-font-smoothing: antialiased;
+    min-height: 100vh;
   }
+
+  /* ---------- Header ---------- */
   header {
-    background: var(--panel); border-bottom: 1px solid var(--border);
-    padding: 14px 22px; display: flex; align-items: center; gap: 14px; flex-wrap: wrap;
+    background: var(--panel);
+    border-bottom: 1px solid var(--border);
+    padding: 16px 24px;
+    display: flex; align-items: center; gap: 16px; flex-wrap: wrap;
   }
+  .brand { display: flex; align-items: center; gap: 12px; flex: 1; min-width: 260px; }
   .mark {
-    width: 28px; height: 28px; border-radius: 8px; background: var(--indigo);
-    display: grid; place-items: center; color: #fff; font-weight: 700; font-size: 13px;
+    width: 34px; height: 34px; border-radius: 9px;
+    background: linear-gradient(135deg, var(--indigo), #6366f1);
+    display: grid; place-items: center; color: #fff;
+    box-shadow: 0 4px 10px rgba(79,70,229,.25);
     flex: none;
   }
-  h1 { font-size: 15px; margin: 0; font-weight: 800; letter-spacing: -.02em; }
-  .sub { color: var(--muted); font-size: 12.5px; margin: 0; }
-  main { padding: 20px 22px 40px; max-width: 1500px; margin: 0 auto; }
-  .grid { display: grid; grid-template-columns: 340px minmax(0, 1fr); gap: 18px; align-items: start; }
+  .mark svg { width: 18px; height: 18px; }
+  .brand-text h1 { font-size: 16px; margin: 0; font-weight: 800; letter-spacing: -.02em; }
+  .brand-text p { color: var(--muted); font-size: 12.5px; margin: 2px 0 0; }
+  .badges { display: flex; gap: 8px; flex-wrap: wrap; }
+  .badge {
+    display: inline-flex; align-items: center; gap: 6px;
+    padding: 5px 10px; border-radius: 20px; font-size: 11.5px; font-weight: 500;
+    background: var(--indigo-soft); color: var(--indigo);
+    border: 1px solid var(--indigo-line);
+  }
+  .badge.mono { font-variant-numeric: tabular-nums; }
+  .badge svg { width: 12px; height: 12px; }
+
+  /* ---------- Layout ---------- */
+  main { padding: 20px 24px 40px; max-width: 1500px; margin: 0 auto; }
+  .grid { display: grid; grid-template-columns: 340px minmax(0, 1fr); gap: 20px; align-items: start; }
   @media (max-width: 980px) {
     .grid { grid-template-columns: 1fr; }
-    /* Stacked, the page itself has to come first. Reading a list of a hundred
-       detections before you can see the document you are reviewing is the wrong
-       way round on a phone. */
-    .stage { order: -1; }
-    /* The list is no longer beside the document, so give it less height and let
-       the page scroll instead of trapping the reader in a nested scroller. */
+    .stage-region { order: -1; }
     .list { max-height: 320px; }
   }
+
+  /* ---------- Cards ---------- */
   .card {
-    background: var(--panel); border: 1px solid var(--border);
-    border-radius: 16px; overflow: hidden;
+    background: var(--panel);
+    border: 1px solid var(--border);
+    border-radius: 14px;
+    overflow: hidden;
+    box-shadow: var(--shadow);
   }
   .card h2 {
-    font-size: 12px; text-transform: uppercase; letter-spacing: .05em;
-    color: var(--muted); margin: 0; padding: 12px 14px 0; font-weight: 600;
+    font-size: 11px; text-transform: uppercase; letter-spacing: .06em;
+    color: var(--muted); margin: 0; padding: 14px 16px 0; font-weight: 600;
   }
-  .pad { padding: 14px; }
+  .pad { padding: 16px; }
+  .stack > * + * { margin-top: 14px; }
+
+  /* ---------- Upload zone ---------- */
   .drop {
-    border: 1.5px dashed var(--border); border-radius: 9px; padding: 20px 14px;
-    text-align: center; cursor: pointer; transition: .15s; display: block;
+    display: block;
+    border: 1.5px dashed var(--border-strong);
+    border-radius: 10px;
+    padding: 22px 16px;
+    text-align: center;
+    cursor: pointer;
+    transition: border-color .15s, background .15s, transform .1s;
   }
-  .drop:hover, .drop.over { border-color: var(--indigo); background: var(--indigo-soft); }
-  .drop b { display: block; font-size: 13.5px; margin-bottom: 2px; }
+  .drop:hover, .drop.over {
+    border-color: var(--indigo);
+    background: var(--indigo-soft);
+  }
+  .drop b { display: block; font-size: 13.5px; margin-bottom: 3px; font-weight: 600; }
   .drop span { color: var(--muted); font-size: 12px; }
+  .drop-icon {
+    width: 32px; height: 32px; margin: 0 auto 10px;
+    color: var(--muted); opacity: .55;
+  }
   input[type=file] { display: none; }
+
   .privacy {
-    display: flex; align-items: center; gap: 6px; margin: 12px 0 0;
+    display: flex; align-items: center; gap: 7px; margin-top: 12px;
+    padding: 8px 10px; border-radius: 8px;
+    background: color-mix(in srgb, var(--checked) 8%, transparent);
     font-size: 11.5px; color: var(--muted);
   }
-  .privacy svg { flex: none; color: var(--checked); }
-  .samples { display: flex; flex-wrap: wrap; gap: 6px; margin-top: 12px; }
+  .privacy svg { flex: none; color: var(--checked); width: 13px; height: 13px; }
+
+  /* ---------- Sample cards (primary CTAs when empty) ---------- */
+  .samples-hero {
+    display: grid; grid-template-columns: repeat(2, 1fr); gap: 12px;
+    padding: 16px;
+  }
+  @media (max-width: 620px) { .samples-hero { grid-template-columns: 1fr; } }
+  .sample-card {
+    display: flex; flex-direction: column;
+    background: var(--panel); border: 1px solid var(--border);
+    border-radius: 10px; overflow: hidden;
+    cursor: pointer; transition: .15s;
+    font: inherit; color: inherit; text-align: left; padding: 0;
+  }
+  .sample-card:hover {
+    border-color: var(--indigo); transform: translateY(-1px);
+    box-shadow: 0 6px 20px rgba(79,70,229,.12);
+  }
+  .sample-thumb {
+    width: 100%; aspect-ratio: 5/4; background: var(--bg);
+    background-size: 220%; background-position: 50% 35%;
+    background-repeat: no-repeat; border-bottom: 1px solid var(--border);
+  }
+  .sample-label { padding: 10px 12px; }
+  .sample-label b { font-size: 12.5px; font-weight: 600; display: block; }
+  .sample-label span { font-size: 11px; color: var(--muted); }
+
+  /* Compact samples strip shown once a document is loaded */
+  .samples-strip {
+    display: flex; gap: 6px; flex-wrap: wrap;
+  }
   .chip {
-    font-size: 11.5px; padding: 5px 9px; border-radius: 20px; cursor: pointer;
+    font-size: 11.5px; padding: 5px 10px; border-radius: 20px; cursor: pointer;
     border: 1px solid var(--border); background: transparent; color: var(--muted);
     font-family: inherit; transition: .15s;
   }
-  .chip:hover { border-color: var(--indigo); color: var(--indigo); }
-  .tiles { display: grid; grid-template-columns: repeat(3, 1fr); gap: 8px; }
-  .tile {
-    background: var(--bg); border: 1px solid var(--border); border-radius: 8px;
-    padding: 10px 8px; text-align: center;
+  .chip:hover { border-color: var(--indigo); color: var(--indigo); background: var(--indigo-soft); }
+
+  /* ---------- Stage ---------- */
+  .stage-region { min-height: 480px; }
+  .stage {
+    position: relative;
+    background: var(--panel); border: 1px solid var(--border);
+    border-radius: 14px; padding: 14px; min-height: 480px;
+    display: flex; align-items: center; justify-content: center;
+    box-shadow: var(--shadow);
   }
-  .tile b { display: block; font-size: 20px; font-weight: 700; font-variant-numeric: tabular-nums; letter-spacing: -.02em; }
+  .canvas-wrap { position: relative; display: inline-block; max-width: 100%; }
+  .canvas-wrap img { display: block; max-width: 100%; height: auto; border-radius: 6px; }
+  .canvas-wrap canvas { position: absolute; inset: 0; width: 100%; height: 100%; pointer-events: none; }
+
+  /* ---------- Empty state (only shown when nothing loaded) ---------- */
+  .empty-hero { text-align: center; max-width: 460px; padding: 40px 20px; }
+  .empty-hero-icon {
+    width: 64px; height: 64px; margin: 0 auto 16px;
+    color: var(--indigo); opacity: .8;
+  }
+  .empty-hero h3 { font-size: 17px; margin: 0 0 8px; font-weight: 700; letter-spacing: -.01em; }
+  .empty-hero p { color: var(--muted); font-size: 13px; margin: 0 0 20px; }
+  .empty-steps {
+    display: grid; grid-template-columns: repeat(3, 1fr);
+    gap: 10px; margin: 20px 0 0;
+  }
+  .empty-step {
+    background: var(--bg); border: 1px solid var(--border); border-radius: 9px;
+    padding: 11px 8px; text-align: center; font-size: 11.5px;
+  }
+  .empty-step-num {
+    display: inline-flex; width: 20px; height: 20px; border-radius: 50%;
+    background: var(--indigo-soft); color: var(--indigo);
+    align-items: center; justify-content: center;
+    font-weight: 700; font-size: 11px; margin-bottom: 6px;
+  }
+  .empty-step-label { display: block; color: var(--muted); }
+
+  /* ---------- Summary tiles ---------- */
+  .tiles { display: grid; grid-template-columns: repeat(3, 1fr); gap: 8px; padding: 16px; }
+  .tile {
+    background: var(--bg); border: 1px solid var(--border); border-radius: 9px;
+    padding: 11px 10px; text-align: center;
+  }
+  .tile b {
+    display: block; font-size: 20px; font-weight: 700;
+    font-variant-numeric: tabular-nums; letter-spacing: -.02em;
+  }
   .tile span { font-size: 11px; color: var(--muted); }
   .tile.review b { color: var(--review); }
+  .tile.checked b { color: var(--checked); }
+
   .banner {
-    margin-top: 12px; padding: 10px 12px; border-radius: 8px; font-size: 12.5px;
+    margin: 0 16px 14px; padding: 10px 12px; border-radius: 8px; font-size: 12.5px;
     background: color-mix(in srgb, var(--review) 12%, transparent);
     border: 1px solid color-mix(in srgb, var(--review) 40%, transparent);
+    color: color-mix(in srgb, var(--review) 90%, var(--text));
   }
   .banner b { color: var(--review); }
-  .filters { display: flex; gap: 6px; padding: 0 14px 12px; flex-wrap: wrap; }
+
+  /* ---------- Filters + list ---------- */
+  .filters { display: flex; gap: 6px; padding: 0 16px 12px; flex-wrap: wrap; }
   .filters button {
     font-size: 11.5px; padding: 5px 10px; border-radius: 6px; cursor: pointer;
     border: 1px solid var(--border); background: transparent; color: var(--muted);
-    font-family: inherit;
+    font-family: inherit; transition: .12s;
   }
+  .filters button:hover:not(.on) { background: var(--panel-hover); color: var(--text); }
   .filters button.on { background: var(--indigo); border-color: var(--indigo); color: #fff; }
-  .list { max-height: 460px; overflow-y: auto; border-top: 1px solid var(--border); }
+
+  .list {
+    max-height: 460px; overflow-y: auto;
+    border-top: 1px solid var(--border);
+  }
   .row {
-    display: grid; grid-template-columns: 16px 1fr auto; gap: 9px; align-items: center;
-    padding: 8px 14px; border-bottom: 1px solid var(--border); cursor: pointer;
-    font-size: 12.5px;
+    display: grid; grid-template-columns: 16px 1fr auto; gap: 10px; align-items: center;
+    padding: 9px 16px; border-bottom: 1px solid var(--border);
+    cursor: pointer; font-size: 12.5px;
   }
   .row:hover { background: var(--indigo-soft); }
   .row.active { background: var(--indigo-soft); box-shadow: inset 3px 0 0 var(--indigo); }
   .swatch { width: 11px; height: 11px; border-radius: 3px; }
   .row .meta { color: var(--muted); font-size: 11px; font-variant-numeric: tabular-nums; }
   .flag {
-    font-size: 10px; padding: 2px 6px; border-radius: 20px; white-space: nowrap;
+    font-size: 10px; padding: 2px 7px; border-radius: 20px; white-space: nowrap;
     background: color-mix(in srgb, var(--review) 18%, transparent); color: var(--review);
+    font-weight: 600;
   }
-  .stage {
-    position: relative; background: var(--panel); border: 1px solid var(--border);
-    border-radius: 16px; padding: 12px; min-height: 420px;
-    display: flex; align-items: center; justify-content: center;
-  }
-  .canvas-wrap { position: relative; display: inline-block; max-width: 100%; }
-  .canvas-wrap img { display: block; max-width: 100%; height: auto; border-radius: 4px; }
-  .canvas-wrap canvas { position: absolute; inset: 0; width: 100%; height: 100%; }
-  .empty { color: var(--muted); text-align: center; font-size: 13px; }
+
+  /* ---------- Loading / error ---------- */
+  .loading-hero { text-align: center; padding: 40px 20px; color: var(--muted); }
   .spinner {
-    width: 20px; height: 20px; border: 2px solid var(--border);
-    border-top-color: var(--indigo); border-radius: 50%;
-    animation: spin .7s linear infinite; margin: 0 auto 10px;
+    width: 28px; height: 28px; margin: 0 auto 14px;
+    border: 3px solid var(--border);
+    border-top-color: var(--indigo);
+    border-radius: 50%;
+    animation: spin .7s linear infinite;
   }
   @keyframes spin { to { transform: rotate(360deg); } }
+  .loading-hero p { margin: 4px 0; font-size: 13px; }
+  .loading-hero small { font-size: 11px; opacity: .7; }
   .error {
-    margin-top: 12px; padding: 10px 12px; border-radius: 8px; font-size: 12.5px;
+    margin-top: 12px; padding: 11px 13px; border-radius: 8px; font-size: 12.5px;
     background: color-mix(in srgb, var(--danger) 12%, transparent);
     border: 1px solid color-mix(in srgb, var(--danger) 35%, transparent);
     color: var(--danger);
   }
-  .legend { display: flex; gap: 14px; margin-top: 10px; font-size: 11.5px; color: var(--muted); }
-  .legend i { width: 10px; height: 10px; border-radius: 3px; display: inline-block; margin-right: 5px; }
-  footer {
-    max-width: 1500px; margin: 0 auto; padding: 0 22px 30px;
-    color: var(--muted); font-size: 11.5px;
+
+  /* ---------- Legend ---------- */
+  .legend {
+    display: flex; gap: 14px; padding: 10px 16px 14px; font-size: 11.5px; color: var(--muted);
+    border-top: 1px solid var(--border); flex-wrap: wrap;
   }
-  code { background: var(--bg); padding: 1px 5px; border-radius: 4px; font-size: 11.5px; }
-  a { color: var(--indigo); }
+  .legend i { width: 10px; height: 10px; border-radius: 3px; display: inline-block; margin-right: 5px; vertical-align: middle; }
+
+  /* ---------- Footer ---------- */
+  footer {
+    max-width: 1500px; margin: 0 auto; padding: 8px 24px 28px;
+    color: var(--muted); font-size: 11.5px;
+    display: flex; justify-content: space-between; gap: 12px; flex-wrap: wrap;
+  }
+  code { background: var(--panel); padding: 2px 6px; border-radius: 4px; font-size: 11.5px; border: 1px solid var(--border); }
+  a { color: var(--indigo); text-decoration: none; }
+  a:hover { text-decoration: underline; }
 </style>
 </head>
 <body>
 <header>
-  <div class="mark">☑</div>
-  <div>
-    <h1>Checkbox Review</h1>
-    <p class="sub">Extracts every checkbox from an appraisal page and flags the ones a human should still look at.</p>
+  <div class="brand">
+    <div class="mark" aria-hidden="true">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
+        <polyline points="20 6 9 17 4 12"></polyline>
+      </svg>
+    </div>
+    <div class="brand-text">
+      <h1>Checkbox Review</h1>
+      <p>Extracts every checkbox on an appraisal page and flags the ones a human should still look at.</p>
+    </div>
+  </div>
+  <div class="badges">
+    <span class="badge mono" title="Pooled F1 over 240 hand-checked checkboxes at IoU >= 0.5">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="M3 12l4-8 4 8 6-16 4 24"/></svg>
+      F1 0.988
+    </span>
+    <span class="badge mono" title="Detection latency on a local CPU">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="9"/><polyline points="12 7 12 12 15 15"/></svg>
+      ~80 ms
+    </span>
+    <span class="badge" title="Uploads never leave the process. See WRITEUP.md for the full security posture.">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="M12 2 4 5v6c0 5 3.5 9.4 8 11 4.5-1.6 8-6 8-11V5l-8-3z"/></svg>
+      In-memory only
+    </span>
   </div>
 </header>
 
 <main>
   <div class="grid">
-    <div>
+    <!-- ============ Left column ============ -->
+    <div class="stack">
       <div class="card">
         <div class="pad">
           <label class="drop" id="drop" for="file">
-            <b>Drop an appraisal page</b>
+            <svg class="drop-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+              <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/>
+              <polyline points="17 8 12 3 7 8"/>
+              <line x1="12" y1="3" x2="12" y2="15"/>
+            </svg>
+            <b>Drop an appraisal page or PDF</b>
             <span>or click to browse. PDF, PNG, JPEG, TIFF, BMP, WEBP.</span>
           </label>
-          <input type="file" id="file" accept="image/*,application/pdf">
-          <div class="samples">
-            <button class="chip" data-sample="uniform_residential_appraisal.png">Uniform Residential</button>
-            <button class="chip" data-sample="manufactured_home_appraisal.png">Manufactured Home</button>
-            <button class="chip" data-sample="market_conditions_addendum.png">Market Conditions</button>
-            <button class="chip" data-sample="neighborhood_site_section.png">Neighborhood</button>
-          </div>
           <p class="privacy">
-            <svg viewBox="0 0 16 16" width="12" height="12" aria-hidden="true">
-              <path fill="currentColor" d="M8 1 3 3v4.5c0 3 2.1 5.8 5 6.5 2.9-.7 5-3.5 5-6.5V3L8 1Zm0 1.6 3.5 1.4v3.5c0 2.3-1.5 4.4-3.5 5-2-.6-3.5-2.7-3.5-5V4L8 2.6Z"/>
-            </svg>
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="M12 2 4 5v6c0 5 3.5 9.4 8 11 4.5-1.6 8-6 8-11V5l-8-3z"/></svg>
             Processed in memory, never written to disk, never logged.
           </p>
           <div id="error"></div>
         </div>
       </div>
 
-      <div class="card" id="summary" hidden style="margin-top:14px">
-        <h2>Summary</h2>
+      <!-- Compact chip strip; only shown after a document is loaded. -->
+      <div class="card" id="samplesStripCard" hidden>
+        <h2>Try another</h2>
         <div class="pad">
-          <div class="tiles">
-            <div class="tile"><b id="tChecked">0</b><span>Checked</span></div>
-            <div class="tile"><b id="tUnchecked">0</b><span>Unchecked</span></div>
-            <div class="tile review"><b id="tReview">0</b><span>Needs review</span></div>
-          </div>
-          <div class="banner" id="reviewBanner" hidden>
-            <b id="reviewCount">0</b> of <span id="reviewTotal">0</span> detections sit close to the
-            decision boundary. Those are the ones worth a human second look.
-          </div>
-          <div class="legend">
-            <span><i style="background:var(--checked)"></i>Checked</span>
-            <span><i style="background:var(--unchecked)"></i>Unchecked</span>
-            <span><i style="background:var(--review)"></i>Low confidence</span>
-          </div>
+          <div class="samples-strip" id="samplesStrip"></div>
         </div>
       </div>
 
-      <div class="card" id="listCard" hidden style="margin-top:14px">
+      <div class="card" id="summary" hidden>
+        <h2>Summary</h2>
+        <div class="tiles">
+          <div class="tile checked"><b id="tChecked">0</b><span>Checked</span></div>
+          <div class="tile"><b id="tUnchecked">0</b><span>Unchecked</span></div>
+          <div class="tile review"><b id="tReview">0</b><span>Needs review</span></div>
+        </div>
+        <div class="banner" id="reviewBanner" hidden>
+          <b id="reviewCount">0</b> of <span id="reviewTotal">0</span> detections sit close to
+          the decision boundary. Those are the ones worth a human second look.
+        </div>
+      </div>
+
+      <div class="card" id="listCard" hidden>
         <h2>Detections</h2>
         <div class="filters">
           <button data-filter="all" class="on">All</button>
@@ -220,250 +373,42 @@
           <button data-filter="review">Needs review</button>
         </div>
         <div class="list" id="list"></div>
+        <div class="legend">
+          <span><i style="background:var(--checked)"></i>Checked</span>
+          <span><i style="background:var(--unchecked)"></i>Unchecked</span>
+          <span><i style="background:var(--review)"></i>Low confidence</span>
+        </div>
       </div>
     </div>
 
-    <div class="stage" id="stage">
-      <div class="empty">Load a page to see its checkboxes.</div>
+    <!-- ============ Right column: the stage ============ -->
+    <div class="stage-region">
+      <!-- Empty state: show sample cards as primary CTAs -->
+      <div class="card" id="hero">
+        <h2>Try it with a sample</h2>
+        <div class="samples-hero" id="samplesHero"></div>
+      </div>
+
+      <!-- Loading state -->
+      <div class="stage" id="loadingState" hidden>
+        <div class="loading-hero">
+          <div class="spinner"></div>
+          <p id="loadingLabel">Reading the page...</p>
+          <small id="loadingHint">On the free tier the first request takes a moment.</small>
+        </div>
+      </div>
+
+      <!-- Loaded document -->
+      <div class="stage" id="stage" hidden></div>
     </div>
   </div>
 </main>
 
 <footer>
-  Contract: <code>POST /detect</code> · full API reference at <a href="/docs">/docs</a>
+  <div>Contract: <code>POST /detect</code> &middot; full API reference at <a href="/docs">/docs</a></div>
+  <div>240 checkboxes hand-verified &middot; F1 0.988 &middot; classification 0.996</div>
 </footer>
 
-<script>
-// A detection is flagged for review when its confidence sits near the decision
-// boundary. That is the number a reviewer should spend their attention on:
-// everything else the system is already sure about.
-const REVIEW_CONFIDENCE = 0.75;
-
-const state = { boxes: [], filter: 'all', active: null, image: null };
-
-const fileInput = document.getElementById('file');
-const drop = document.getElementById('drop');
-const stage = document.getElementById('stage');
-const listEl = document.getElementById('list');
-const errorEl = document.getElementById('error');
-
-fileInput.addEventListener('change', () => {
-  if (fileInput.files.length) analyse(fileInput.files[0]);
-});
-
-['dragenter', 'dragover'].forEach(type =>
-  drop.addEventListener(type, event => { event.preventDefault(); drop.classList.add('over'); }));
-['dragleave', 'drop'].forEach(type =>
-  drop.addEventListener(type, event => { event.preventDefault(); drop.classList.remove('over'); }));
-drop.addEventListener('drop', event => {
-  const file = event.dataTransfer.files[0];
-  if (file) analyse(file);
-});
-
-document.querySelectorAll('[data-sample]').forEach(chip =>
-  chip.addEventListener('click', async () => {
-    const name = chip.dataset.sample;
-    const response = await fetch(`/samples/${name}`);
-    analyse(new File([await response.blob()], name, { type: 'image/png' }));
-  }));
-
-document.querySelectorAll('[data-filter]').forEach(button =>
-  button.addEventListener('click', () => {
-    document.querySelectorAll('[data-filter]').forEach(other => other.classList.remove('on'));
-    button.classList.add('on');
-    state.filter = button.dataset.filter;
-    renderList();
-    draw();
-  }));
-
-function showError(message) {
-  errorEl.innerHTML = `<div class="error">${message}</div>`;
-}
-
-async function analyse(file) {
-  if (file.type === 'application/pdf' || file.name.toLowerCase().endsWith('.pdf')) {
-    return analysePdf(file);
-  }
-  errorEl.innerHTML = '';
-  document.getElementById('summary').hidden = true;
-  document.getElementById('listCard').hidden = true;
-  stage.innerHTML = '<div class="empty"><div class="spinner"></div>Reading the page...</div>';
-
-  const body = new FormData();
-  body.append('file', file);
-
-  let payload;
-  try {
-    const response = await fetch('/detect/debug', { method: 'POST', body });
-    payload = await response.json();
-    if (!response.ok) {
-      stage.innerHTML = '<div class="empty">Nothing to show.</div>';
-      showError(payload.detail || 'The page could not be processed.');
-      return;
-    }
-  } catch (err) {
-    stage.innerHTML = '<div class="empty">Nothing to show.</div>';
-    showError('Could not reach the service.');
-    return;
-  }
-
-  state.boxes = payload.boxes.map((box, index) => ({ ...box, index }));
-  state.active = null;
-
-  // The original page is displayed from the local file and the overlay is drawn
-  // on a canvas above it, so filtering and highlighting cost no round trip.
-  const image = new Image();
-  image.onload = () => {
-    stage.innerHTML = '';
-    const wrap = document.createElement('div');
-    wrap.className = 'canvas-wrap';
-    const canvas = document.createElement('canvas');
-    wrap.append(image, canvas);
-    stage.appendChild(wrap);
-    state.image = { element: image, canvas };
-    draw();
-  };
-  image.src = URL.createObjectURL(file);
-  image.alt = 'Appraisal page with detected checkboxes outlined';
-
-  renderSummary(payload);
-  renderList();
-}
-
-function needsReview(box) {
-  return box.confidence < REVIEW_CONFIDENCE;
-}
-
-function visibleBoxes() {
-  if (state.filter === 'checked') return state.boxes.filter(box => box.is_checked);
-  if (state.filter === 'unchecked') return state.boxes.filter(box => !box.is_checked);
-  if (state.filter === 'review') return state.boxes.filter(needsReview);
-  return state.boxes;
-}
-
-function renderSummary(payload) {
-  const flagged = state.boxes.filter(needsReview).length;
-  document.getElementById('tChecked').textContent = payload.checked_count;
-  document.getElementById('tUnchecked').textContent = payload.unchecked_count;
-  document.getElementById('tReview').textContent = flagged;
-  document.getElementById('reviewCount').textContent = flagged;
-  document.getElementById('reviewTotal').textContent = state.boxes.length;
-  document.getElementById('reviewBanner').hidden = flagged === 0;
-  document.getElementById('summary').hidden = false;
-}
-
-function renderList() {
-  const boxes = visibleBoxes();
-  document.getElementById('listCard').hidden = state.boxes.length === 0;
-
-  listEl.innerHTML = boxes.map(box => {
-    const colour = box.is_checked ? 'var(--checked)' : 'var(--unchecked)';
-    const flag = needsReview(box) ? '<span class="flag">review</span>' : '';
-    return `
-      <div class="row ${state.active === box.index ? 'active' : ''}" data-index="${box.index}">
-        <span class="swatch" style="background:${colour}"></span>
-        <span>
-          ${box.is_checked ? 'Checked' : 'Unchecked'}
-          <span class="meta">· ink ${box.ink_ratio.toFixed(3)} · conf ${box.confidence.toFixed(2)}</span>
-        </span>
-        ${flag}
-      </div>`;
-  }).join('') || '<div class="pad empty">No detections in this filter.</div>';
-
-  listEl.querySelectorAll('.row').forEach(row =>
-    row.addEventListener('click', () => {
-      state.active = Number(row.dataset.index);
-      renderList();
-      draw();
-    }));
-}
-
-function draw() {
-  if (!state.image) return;
-  const { element, canvas } = state.image;
-
-  // Match the canvas to the rendered size so overlay coordinates line up with
-  // whatever width the browser gave the image.
-  const rect = element.getBoundingClientRect();
-  const ratio = window.devicePixelRatio || 1;
-  canvas.width = rect.width * ratio;
-  canvas.height = rect.height * ratio;
-
-  const context = canvas.getContext('2d');
-  context.setTransform(ratio, 0, 0, ratio, 0, 0);
-  context.clearRect(0, 0, rect.width, rect.height);
-
-  const scale = rect.width / element.naturalWidth;
-  const styles = getComputedStyle(document.documentElement);
-  const palette = {
-    checked: styles.getPropertyValue('--checked').trim(),
-    unchecked: styles.getPropertyValue('--unchecked').trim(),
-    review: styles.getPropertyValue('--review').trim(),
-    indigo: styles.getPropertyValue('--indigo').trim(),
-  };
-
-  for (const box of visibleBoxes()) {
-    const [x1, y1, x2, y2] = box.bbox;
-    const isActive = state.active === box.index;
-    context.strokeStyle = isActive
-      ? palette.indigo
-      : needsReview(box) ? palette.review
-      : box.is_checked ? palette.checked : palette.unchecked;
-    context.lineWidth = isActive ? 3 : 1.6;
-    context.strokeRect(x1 * scale, y1 * scale, (x2 - x1) * scale, (y2 - y1) * scale);
-
-    if (isActive) {
-      context.fillStyle = palette.indigo + '22';
-      context.fillRect(x1 * scale, y1 * scale, (x2 - x1) * scale, (y2 - y1) * scale);
-    }
-  }
-}
-
-// A loan file is a PDF, so the UI reads them too. Pages are rendered server
-// side and paged through here rather than shipping a PDF renderer to the
-// browser for what is a review tool, not a viewer.
-async function analysePdf(file) {
-  errorEl.innerHTML = '';
-  document.getElementById('summary').hidden = true;
-  document.getElementById('listCard').hidden = true;
-  stage.innerHTML = '<div class="empty"><div class="spinner"></div>Reading the document\u2026</div>';
-
-  const body = new FormData();
-  body.append('file', file);
-
-  let payload;
-  try {
-    const response = await fetch('/detect/pdf', { method: 'POST', body });
-    payload = await response.json();
-    if (!response.ok) {
-      stage.innerHTML = '<div class="empty">Nothing to show.</div>';
-      showError(payload.detail || 'The document could not be processed.');
-      return;
-    }
-  } catch (err) {
-    stage.innerHTML = '<div class="empty">Nothing to show.</div>';
-    showError('Could not reach the service.');
-    return;
-  }
-
-  const checked = payload.pages.reduce(
-    (total, page) => total + page.boxes.filter(box => box.is_checked).length, 0);
-
-  stage.innerHTML = `<div class="empty">
-      <b>${payload.page_count} pages</b><br>
-      ${payload.total_boxes} checkboxes, ${checked} of them marked<br>
-      <span style="font-size:12px">Rendered at ${payload.render_dpi} DPI in ${payload.elapsed_ms} ms.
-      Upload a single page image to inspect detections visually.</span>
-    </div>`;
-
-  document.getElementById('tChecked').textContent = checked;
-  document.getElementById('tUnchecked').textContent = payload.total_boxes - checked;
-  document.getElementById('tReview').textContent = '\u2013';
-  document.getElementById('reviewBanner').hidden = true;
-  document.getElementById('summary').hidden = false;
-}
-
-window.addEventListener('resize', draw);
-</script>
+<script src="/static/app.js" defer></script>
 </body>
 </html>

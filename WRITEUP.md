@@ -334,6 +334,98 @@ metadata that has no business in a response.
 - **Deskew is global.** A page with different skew top and bottom, as happens
   with a curled scan, is not corrected per region.
 
+## Security posture
+
+The role this was written for is Infrastructure Engineer, AI & Data Security,
+and the JD asks for someone who "naturally considers data access and potential
+leak vectors for every process, person, and agent." That framing sets the bar
+for a service that will ingest borrower names, property addresses, financial
+detail and social security numbers. What follows is the threat model I worked
+against and the controls that answer each threat.
+
+### Threats considered and how each is answered
+
+**A malicious upload leaks or crashes the service.**
+Content type on an upload is attacker controlled, so format is decided by
+magic bytes in `app/security.py`, not by the `Content-Type` header or the
+filename. File size and decoded resolution are capped before any decoding
+happens, which closes the decompression-bomb path where a 200 KB PNG expands
+into 20 GB of pixels. Errors return a 400 with a request id and never echo
+the payload; `test_error_response_never_echoes_the_payload` is the regression
+for that specific leak.
+
+**A caller extracts data through the log stream or a side channel.**
+Logs carry a request id, image dimensions, detection count and timing.
+Nothing derived from the document body, and never the filename. The filename
+is metadata the caller chose, so echoing it back into the batch response would
+put per-page identifiers in a shared log; batch items are identified by
+position for that reason.
+
+**A single caller starves everyone else off the box.**
+Detection is CPU-bound. `RateLimitMiddleware` in `app/http_security.py` caps
+requests per client IP with a sliding window (defaults to 60/minute, tunable),
+and correctly reads `X-Forwarded-For` behind Render's proxy so two real
+clients coming through one edge stay in separate buckets. Health probes are
+excluded so a load balancer cannot exhaust the caller's quota. This is not a
+substitute for an edge policy at a CDN or API gateway, which is where the
+real limit belongs; it is the defence in depth while that is being wired up.
+
+**The browser is turned against the service.**
+Every response ships with `X-Content-Type-Options: nosniff`, `X-Frame-Options:
+DENY`, `Referrer-Policy: no-referrer`, `Strict-Transport-Security` and the
+cross-origin isolation headers. The HTML shell additionally ships a
+Content-Security-Policy that pins every fetch directive to `'self'`, which is
+possible because the UI is fully self-contained (no CDN scripts, no remote
+fonts). CORS defaults to an empty allowlist, which means the framework refuses
+cross-origin callers outright rather than reflecting the caller's origin. Both
+behaviours have live tests in `tests/test_http_security.py`.
+
+**An attacker gets code execution inside the container.**
+The container runs as a dedicated uid on a read-only filesystem with tmpfs on
+`/tmp` and `no-new-privileges`. There is no home directory, and the shell for
+the runtime user is `/usr/sbin/nologin`. Uploads are decoded in memory and the
+process holds no state that survives a request, so a compromised worker has
+nothing on the local filesystem to exfiltrate. `docker compose exec` proves
+the read-only mount rejects writes anywhere but `/tmp`.
+
+**A supply-chain change ships a vulnerable dependency or base image.**
+Direct dependencies are pinned to exact versions, the lock file is committed,
+and CI runs Trivy over the built image on every push with `HIGH` and
+`CRITICAL` severities configured as a build-breaking exit code. The Dockerfile
+carries a `TODO(production)` to pin the Python base image by sha256 digest;
+that removes the last floating reference in the supply chain.
+
+**Content leaves the process.**
+The default detection engine is local and deterministic. The Textract adapter
+is off by default and returns a clear error when selected without credentials.
+That decision is argued at length above; the compressed form is that every
+page sent to a managed service is a compliance boundary crossed, and defaulting
+to that would be the wrong choice for the workload.
+
+### AI-specific threats worth naming explicitly
+
+The default detector is deterministic classical computer vision, so the
+learned-model attack surface is smaller than the JD's "AI systems" wording
+suggests. But the service does route to an ML backend when selected, and
+that surface deserves to be named:
+
+- **Prompt injection.** Textract does not consume prompts, so it is not
+  vulnerable in the classical sense. A future vision-language backend, of the
+  sort argued for above as a second-opinion pass on low-confidence detections,
+  would need input sanitisation and an output schema constraint.
+- **Model output as truth.** Even Textract's `SelectionStatus` is a probability
+  in disguise, and treating it as a hard fact is how a wrong underwriting
+  decision gets made. The service surfaces confidence on every backend so a
+  caller can gate on it rather than trust the label.
+- **Data poisoning of a retrained detector.** Out of scope today because the
+  detector is not learned, but the moment a labelled corpus starts being fed
+  back into training, the annotation pipeline becomes an attack surface. The
+  contact-sheet review flow in `eval/` is where that would be gated.
+- **Membership inference.** If a learned detector were trained on the very
+  documents it later scores, output confidence could leak whether a specific
+  page was in the training set. The current pipeline has no training and no
+  memory across requests, so this cannot happen here.
+
 ## What production would need
 
 Marked in the code as `TODO(production)` where relevant.
