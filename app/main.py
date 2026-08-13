@@ -20,6 +20,7 @@ from fastapi.staticfiles import StaticFiles
 from app.config import DetectionSettings, NetworkSettings, PdfSettings, UploadSettings
 from app.detection import classical, pdf, render, textract
 from app.http_security import (
+    ApiKeyMiddleware,
     RateLimitMiddleware,
     SecurityHeadersMiddleware,
     configure_cors,
@@ -64,16 +65,25 @@ app = FastAPI(
 )
 
 
-# Middleware order matters: outermost runs first on the request and last on the
-# response. Security headers go outside everything so a rejected request still
-# leaves with hardening applied; rate limiting sits inside headers so a 429 also
-# gets them; the request id is innermost because the rest of the app reads it.
-app.add_middleware(SecurityHeadersMiddleware)
+# Middleware order matters and Starlette's ``add_middleware`` inserts at the
+# front, so the LAST one added is the OUTERMOST. Desired application order,
+# outermost first:
+#
+#   1. SecurityHeaders  - so every response, including 401 and 429, ships
+#                         hardening headers
+#   2. RateLimit        - throttle before doing any auth work, so an
+#                         unauthenticated flood cannot exhaust CPU on hmac
+#                         compares
+#   3. ApiKey           - authenticate legitimate callers
+#
+# Which means the code below adds them in the reverse order.
+app.add_middleware(ApiKeyMiddleware, expected_key=network_settings.api_key)
 app.add_middleware(
     RateLimitMiddleware,
     max_requests=network_settings.rate_limit_max,
     window_seconds=network_settings.rate_limit_window_seconds,
 )
+app.add_middleware(SecurityHeadersMiddleware)
 configure_cors(app, network_settings.allowed_origins)
 
 

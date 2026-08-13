@@ -47,6 +47,25 @@ jobs:
       # pinned dependencies stop a base image from silently changing, and
       # scanning catches a pinned dependency that was safe last week and is
       # not any more.
+      # Software Bill of Materials, the other leg of the supply chain story
+      # from Trivy's vulnerability scan. Trivy answers "which of what we ship
+      # has known CVEs"; the SBOM answers "what is in what we ship, so an
+      # audit can check it later without rebuilding". Uploading it as an
+      # artifact keeps a machine-readable inventory next to every commit.
+      - name: Generate SBOM (CycloneDX)
+        uses: anchore/sbom-action@v0
+        with:
+          image: checkbox-detection:ci
+          format: cyclonedx-json
+          output-file: sbom.cdx.json
+
+      - name: Upload SBOM
+        uses: actions/upload-artifact@v4
+        with:
+          name: sbom-cyclonedx
+          path: sbom.cdx.json
+          if-no-files-found: error
+
       - name: Scan image with Trivy (fail on HIGH or CRITICAL)
         uses: aquasecurity/trivy-action@0.28.0
         with:

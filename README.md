@@ -191,11 +191,11 @@ pip install -r requirements-dev.txt
 pytest -q
 ```
 
-67 tests covering the geometry primitives, the detector against synthetic pages
+74 tests covering the geometry primitives, the detector against synthetic pages
 with known answers, the HTTP contract, and every upload rejection path.
 
 ```
-67 passed in 2.07s
+74 passed in 1.86s
 ```
 
 ---
@@ -269,6 +269,7 @@ resolutions rather than assuming 300 DPI.
 | `ALLOWED_ORIGINS` | `""` | Comma-separated CORS allowlist (empty = deny all) |
 | `RATE_LIMIT_MAX` | `60` | Requests per client IP inside the window |
 | `RATE_LIMIT_WINDOW_SECONDS` | `60` | Sliding-window length for the rate limit |
+| `API_KEY` | `""` (off) | Require this value in the `X-API-Key` header; empty disables auth |
 | `MAX_BATCH_FILES` | `25` | Images accepted in one batch request |
 | `PDF_RENDER_DPI` | `200` | Resolution PDF pages are rasterised at |
 | `PDF_MAX_PAGES` | `50` | Page ceiling for a submitted PDF |
@@ -342,7 +343,12 @@ addresses and financial detail. Every design decision has to answer to that.
   Policy locked to `'self'` on the HTML, CORS defaults to an empty allowlist,
   per-IP rate limiting that respects `X-Forwarded-For` behind a proxy.
 - **Supply chain.** Dependencies pinned exactly, image scanned with Trivy in
-  CI on every push, `HIGH` and `CRITICAL` findings break the build.
+  CI on every push, `HIGH` and `CRITICAL` findings break the build. Every
+  CI run also publishes a CycloneDX SBOM as an artifact so an auditor can
+  read what shipped without rebuilding.
+- **Optional authentication.** An `X-API-Key` header check that gates every
+  endpoint except the probes, opt-in via `API_KEY`, off by default so the
+  reviewer can test end to end without credentials. Constant-time compare.
 - **Managed AI as an opt-in.** Textract is a swappable backend, off by
   default, so borrower documents do not leave the process unless a caller
   explicitly asks for it.

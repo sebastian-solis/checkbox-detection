@@ -343,6 +343,41 @@ for a service that will ingest borrower names, property addresses, financial
 detail and social security numbers. What follows is the threat model I worked
 against and the controls that answer each threat.
 
+### Data-flow: where a document goes and what touches it
+
+The controls only make sense against a map of where the data actually travels.
+This is that map for a single detection request. Nothing on this diagram
+persists across the request: every arrow is memory, every node dies when the
+request ends.
+
+```mermaid
+flowchart LR
+    C[Client] -- POST /detect<br/>multipart image --> H[Security headers]
+    H --> R[Rate limit<br/>per client IP]
+    R --> A[API key<br/>optional]
+    A --> V[Magic-byte and<br/>size validation]
+    V -->|reject| E1[400 JSON<br/>no payload echo]
+    V -->|accept| D[Detector in memory]
+    D --> J[JSON response<br/>bbox + is_checked]
+    J --> C
+
+    L{{Logs: request_id,<br/>dimensions, count, ms}}
+    D -. no content .-> L
+
+    FS[(Filesystem)]:::disabled
+    V -. no writes .-> FS
+    D -. no writes .-> FS
+
+    Ext[Any external service]:::disabled
+    D -. no network .-> Ext
+
+    classDef disabled stroke-dasharray: 4 3,color:#888,fill:#fafafa;
+```
+
+Everything drawn dashed is not on the path: the disk is untouched, the network
+is not called out to, the logs never see document content. That is the concrete
+form of "processed in memory, never written to disk, never logged".
+
 ### Threats considered and how each is answered
 
 **A malicious upload leaks or crashes the service.**

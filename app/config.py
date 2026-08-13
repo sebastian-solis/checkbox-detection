@@ -152,6 +152,7 @@ class NetworkSettings:
     allowed_origins: tuple[str, ...] = ()
     rate_limit_max: int = 60
     rate_limit_window_seconds: float = 60.0
+    api_key: str | None = None
 
     @classmethod
     def from_env(cls) -> NetworkSettings:
@@ -163,4 +164,5 @@ class NetworkSettings:
             rate_limit_window_seconds=_env_float(
                 "RATE_LIMIT_WINDOW_SECONDS", cls.rate_limit_window_seconds
             ),
+            api_key=os.getenv("API_KEY") or None,
         )

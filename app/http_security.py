@@ -58,6 +58,58 @@ _CONTENT_SECURITY_POLICY = "; ".join(
 )
 
 
+class ApiKeyMiddleware(BaseHTTPMiddleware):
+    """Refuse callers that do not present the configured API key.
+
+    Authentication is opt-in per deployment: without ``API_KEY`` set, the
+    middleware is a no-op and the service behaves as an open API. This keeps
+    the take-home reviewable end to end without credentials while still letting
+    production stand up an access-control boundary with one environment
+    variable and no code change.
+
+    Probes (``/health``, ``/ready``) are exempt so a load balancer does not
+    need to hold a shared secret. Documentation endpoints stay open so the
+    contract is discoverable; those are the same shape callers can see in the
+    committed source.
+    """
+
+    _EXEMPT_PATHS: frozenset[str] = frozenset(
+        {"/health", "/ready", "/docs", "/redoc", "/openapi.json"}
+    )
+    _HEADER = "x-api-key"
+
+    def __init__(self, app, expected_key: str | None) -> None:
+        super().__init__(app)
+        # An empty string counts as "not set" so a misconfigured deployment
+        # doesn't accept the empty string as a valid key.
+        self._expected = expected_key or None
+
+    async def dispatch(self, request: Request, call_next):
+        if self._expected is None:
+            return await call_next(request)
+
+        if request.url.path in self._EXEMPT_PATHS or request.url.path.startswith("/static"):
+            return await call_next(request)
+
+        # Constant-time compare so a caller cannot use response timing to
+        # narrow the key one byte at a time.
+        import hmac
+
+        presented = request.headers.get(self._HEADER, "")
+        if not hmac.compare_digest(presented, self._expected):
+            request_id = getattr(request.state, "request_id", "unknown")
+            return JSONResponse(
+                status_code=401,
+                content={
+                    "detail": "Missing or invalid API key.",
+                    "request_id": request_id,
+                },
+                headers={"WWW-Authenticate": "ApiKey"},
+            )
+
+        return await call_next(request)
+
+
 class SecurityHeadersMiddleware(BaseHTTPMiddleware):
     """Attach hardening headers to every response.
 

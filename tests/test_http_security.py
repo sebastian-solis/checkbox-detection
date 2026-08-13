@@ -187,3 +187,87 @@ def test_ready_exercises_the_detection_pipeline(client):
 
     assert response.status_code == 200
     assert response.json()["status"] == "ready"
+
+
+# ---------------------------------------------------------------------------
+# API key
+# ---------------------------------------------------------------------------
+
+
+def _scoped_client_with_api_key(expected_key: str | None):
+    from fastapi import FastAPI
+
+    from app.http_security import ApiKeyMiddleware, SecurityHeadersMiddleware
+
+    scoped = FastAPI()
+    # add_middleware inserts at the front, so the last one added is outermost.
+    # SecurityHeaders must wrap the API key gate so a 401 also ships hardening.
+    scoped.add_middleware(ApiKeyMiddleware, expected_key=expected_key)
+    scoped.add_middleware(SecurityHeadersMiddleware)
+
+    @scoped.get("/health")
+    def health():
+        return {"status": "ok"}
+
+    @scoped.get("/work")
+    def work():
+        return {"ok": True}
+
+    return TestClient(scoped)
+
+
+def test_api_key_disabled_by_default():
+    """With no key configured, the middleware is a no-op."""
+    client = _scoped_client_with_api_key(None)
+
+    assert client.get("/work").status_code == 200
+
+
+def test_api_key_refuses_calls_without_the_header():
+    client = _scoped_client_with_api_key("s3cret")
+
+    response = client.get("/work")
+    assert response.status_code == 401
+    assert response.json()["detail"] == "Missing or invalid API key."
+    assert response.headers.get("www-authenticate") == "ApiKey"
+
+
+def test_api_key_refuses_calls_with_the_wrong_header():
+    client = _scoped_client_with_api_key("s3cret")
+
+    response = client.get("/work", headers={"x-api-key": "wr0ng"})
+    assert response.status_code == 401
+
+
+def test_api_key_accepts_calls_with_the_right_header():
+    client = _scoped_client_with_api_key("s3cret")
+
+    response = client.get("/work", headers={"x-api-key": "s3cret"})
+    assert response.status_code == 200
+
+
+def test_api_key_exempts_probes():
+    """A load balancer should not need to hold the shared secret."""
+    client = _scoped_client_with_api_key("s3cret")
+
+    assert client.get("/health").status_code == 200
+
+
+def test_api_key_still_gets_security_headers_on_a_rejection():
+    """A 401 leaks nothing but the hardening still ships."""
+    client = _scoped_client_with_api_key("s3cret")
+
+    response = client.get("/work")
+    assert response.status_code == 401
+    assert response.headers["x-content-type-options"] == "nosniff"
+    assert response.headers["x-frame-options"] == "DENY"
+
+
+def test_api_key_uses_constant_time_compare():
+    """The middleware imports hmac.compare_digest for the timing property."""
+    import inspect
+
+    from app.http_security import ApiKeyMiddleware
+
+    source = inspect.getsource(ApiKeyMiddleware)
+    assert "hmac.compare_digest" in source
