@@ -62,7 +62,24 @@ app = FastAPI(
         "Detects and classifies checkboxes in scanned document images. "
         "Uploads are processed in memory and never written to disk."
     ),
+    # FastAPI's built-in /docs pulls Swagger UI assets from cdn.jsdelivr.net,
+    # which our CSP script-src 'self' correctly refuses. Ship the assets from
+    # the app itself so the docs load without weakening the CSP.
+    docs_url=None,
 )
+
+
+@app.get("/docs", include_in_schema=False)
+async def swagger_ui() -> FileResponse:
+    """Serve Swagger UI from bundled assets.
+
+    FastAPI's default /docs pulls Swagger from cdn.jsdelivr.net and uses an
+    inline bootstrap script, both of which are refused by our Content-Security-
+    Policy. Shipping the assets under /static and moving the init to its own
+    file keeps the CSP locked to 'self' with no exceptions, and lets the docs
+    work in an air-gapped deployment as a bonus.
+    """
+    return FileResponse(_STATIC_DIR / "swagger" / "index.html")
 
 
 # Middleware order matters and Starlette's ``add_middleware`` inserts at the
