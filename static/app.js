@@ -1,7 +1,7 @@
 // Detections whose confidence falls below this get flagged for a second look.
 // It is the number a reviewer should spend attention on; everything else the
 // system is already sure about.
-const REVIEW_CONFIDENCE = 0.75;
+const REVIEW_CONFIDENCE = 0.65;
 
 const SAMPLES = [
   { file: "uniform_residential_appraisal.png", title: "Uniform Residential", subtitle: "Freddie Mac 70, ~129 checkboxes" },

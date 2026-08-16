@@ -252,9 +252,10 @@ def _confidence_from_ink(ink_ratio: float, threshold: float) -> float:
         return 1.0
 
     if ink_ratio >= threshold:
-        # Saturate a little above the threshold: past that, more ink adds no
-        # real certainty, it is already obviously marked.
-        distance = min((ink_ratio - threshold) / threshold, 1.0)
+        # A slim check-mark or X only covers ~1.3x the threshold worth of ink
+        # but is unambiguously marked to a human, so saturate confidence early
+        # rather than reserving 1.0 for boxes that are basically filled solid.
+        distance = min((ink_ratio - threshold) / (0.35 * threshold), 1.0)
     else:
         distance = min((threshold - ink_ratio) / threshold, 1.0)
 
