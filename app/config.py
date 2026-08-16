@@ -62,6 +62,16 @@ class DetectionSettings:
     max_stroke_saturation: float = 90.0
     polygon_epsilon: float = 0.04
     max_polygon_vertices: int = 8
+    # Each side of a checkbox border is sampled as a thin band this wide relative
+    # to the shorter side of the box, and must be at least `min_border_ink` full
+    # of ink for the candidate to survive. Kills open letter shapes (a C misses
+    # its right side) that slip through the geometric filters.
+    border_band_ratio: float = 0.14
+    # Measured against the reviewed corpus: real thin-ruled checkboxes score as
+    # low as 0.16 on their weakest side after adaptive binarization, and open
+    # letter shapes score near zero on the missing side. 0.10 sits comfortably
+    # between the two.
+    min_border_ink: float = 0.10
     duplicate_iou_threshold: float = 0.3
     interior_inset_ratio: float = 0.22
     checked_ink_threshold: float = 0.14
@@ -82,6 +92,8 @@ class DetectionSettings:
             max_stroke_saturation=_env_float("MAX_STROKE_SATURATION", cls.max_stroke_saturation),
             polygon_epsilon=_env_float("POLYGON_EPSILON", cls.polygon_epsilon),
             max_polygon_vertices=_env_int("MAX_POLYGON_VERTICES", cls.max_polygon_vertices),
+            border_band_ratio=_env_float("BORDER_BAND_RATIO", cls.border_band_ratio),
+            min_border_ink=_env_float("MIN_BORDER_INK", cls.min_border_ink),
             duplicate_iou_threshold=_env_float(
                 "DUPLICATE_IOU_THRESHOLD", cls.duplicate_iou_threshold
             ),

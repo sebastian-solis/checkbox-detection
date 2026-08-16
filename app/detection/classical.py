@@ -29,7 +29,8 @@ def detect(image: np.ndarray, settings: DetectionSettings) -> list[Checkbox]:
     candidates = [
         box
         for box in candidates
-        if _sits_on_paper(box, grayscale, settings)
+        if _has_all_four_borders(box, binary, settings)
+        and _sits_on_paper(box, grayscale, settings)
         and _is_drawn_in_ink(box, image, settings)
     ]
     deduplicated = _suppress_overlaps(candidates, settings.duplicate_iou_threshold)
@@ -110,6 +111,40 @@ def _is_plausible_checkbox(
     perimeter = cv2.arcLength(contour, closed=True)
     approximation = cv2.approxPolyDP(contour, settings.polygon_epsilon * perimeter, True)
     return len(approximation) <= settings.max_polygon_vertices
+
+
+def _has_all_four_borders(
+    box: BoundingBox, binary: np.ndarray, settings: DetectionSettings
+) -> bool:
+    """Reject open shapes that fit the bounding box but lack one side.
+
+    Extent and polygon-vertex tests handle most letters, but a printed C sitting
+    inside a table cell can still smuggle a candidate through when nearby ruled
+    lines contribute the missing side. Sampling the four borders of the box in
+    the binarised page and requiring every side to be mostly ink catches this:
+    a real checkbox has all four sides, a C is missing its right edge.
+    """
+    band = max(1, int(min(box.width, box.height) * settings.border_band_ratio))
+    height, width = binary.shape[:2]
+
+    y1 = max(0, box.y1)
+    y2 = min(height, box.y2)
+    x1 = max(0, box.x1)
+    x2 = min(width, box.x2)
+    if y2 - y1 < 2 * band or x2 - x1 < 2 * band:
+        return False
+
+    top    = binary[y1 : y1 + band, x1:x2]
+    bottom = binary[y2 - band : y2, x1:x2]
+    left   = binary[y1:y2, x1 : x1 + band]
+    right  = binary[y1:y2, x2 - band : x2]
+
+    for side in (top, bottom, left, right):
+        if side.size == 0:
+            return False
+        if float(np.count_nonzero(side) / side.size) < settings.min_border_ink:
+            return False
+    return True
 
 
 def _sits_on_paper(
