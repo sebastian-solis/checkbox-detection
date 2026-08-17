@@ -618,6 +618,41 @@ that surface deserves to be named:
   page was in the training set. The current pipeline has no training and no
   memory across requests, so this cannot happen here.
 
+### Secure SDLC and supply chain
+
+The threat surface an AI Security Engineer signs off on is not only the
+running service. It is the pipeline that puts the running service there. This
+project makes that pipeline auditable:
+
+- **Pinned dependencies with a lock file.** `requirements-lock.txt` fixes every
+  transitive version and is what the container installs. `requirements.txt`
+  is for humans; the lock is what runs. An upstream `pip install urllib3` that
+  silently pulls a compromised version cannot reach production without a
+  reviewed change to the lock.
+- **Software Bill of Materials, generated in CI.** `.github/workflows/ci.yml`
+  emits a CycloneDX SBOM for every commit. The SBOM is what makes the "is the
+  Log4Shell version of X in our build?" question answerable in minutes rather
+  than a two-day audit.
+- **Vulnerability scan as a blocking step.** Trivy scans both the filesystem
+  and the built image on every push. HIGH and CRITICAL findings block the
+  merge; the writeup would be dishonest if the CI did not enforce it.
+- **No secrets in the image.** The Dockerfile installs code and dependencies
+  only. Credentials arrive as environment variables at runtime and are read
+  through `NetworkSettings.from_env`; a scan of the image will not turn up
+  keys, and `git secrets` would catch a regression before the commit lands.
+- **CSP and security headers as code.** `SecurityHeadersMiddleware` is a
+  reviewable artifact rather than a checkbox on a WAF console someone changed
+  months ago and no one remembers. It is tested: the test suite fails if a
+  rejection response ever ships without headers.
+- **Reproducible builds locally.** `docker compose up` is the same build the
+  CI runs. A reviewer does not need our AWS account to reproduce the artifact
+  they are being asked to trust.
+
+The result is a chain where every step, from an upstream package to the
+process handling a page, has a name, a version and an audit trail. That is
+the property the role is being hired to enforce, so it seems fair to
+demonstrate it here.
+
 ## What production would need
 
 Marked in the code as `TODO(production)` where relevant.

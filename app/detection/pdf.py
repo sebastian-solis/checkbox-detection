@@ -31,6 +31,10 @@ def rasterise(payload: bytes, settings: PdfSettings) -> list[np.ndarray]:
     the detector's thresholds are ratios of page width, so what matters is that
     a checkbox occupies a sensible number of pixels, not that the raster matches
     any particular scan resolution.
+
+    TODO(prod): render pages concurrently on a process pool; pdfium releases
+    the GIL for the raster step so per-page work parallelises well and the
+    50-page ceiling would drop from linear to bounded wall time.
     """
     try:
         document = pdfium.PdfDocument(payload)

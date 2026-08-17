@@ -19,7 +19,14 @@ from app.detection.types import BoundingBox, Checkbox
 
 
 def detect(image: np.ndarray, settings: DetectionSettings) -> list[Checkbox]:
-    """Find every checkbox in a document image and say whether it is marked."""
+    """Find every checkbox in a document image and say whether it is marked.
+
+    TODO(prod): once we have enough hand-labelled pages (a few hundred), train
+    a small YOLO or DETR head on checkbox crops and use it as a fallback when
+    this pipeline emits fewer than expected boxes for a page. Detection stays
+    a whitebox by default so an underwriter can be told *why* a box was
+    called checked; the learned model only fires when classical does not.
+    """
     grayscale = to_grayscale(image)
     if settings.deskew_enabled:
         grayscale, _ = deskew(grayscale)

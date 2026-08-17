@@ -106,7 +106,14 @@ configure_cors(app, network_settings.allowed_origins)
 
 @app.middleware("http")
 async def attach_request_id(request: Request, call_next):
-    """Tag every request so logs correlate without recording any content."""
+    """Tag every request so logs correlate without recording any content.
+
+    TODO(prod): emit an OpenTelemetry span per request with the request ID as
+    trace attribute, ship spans to a collector, and export RED metrics
+    (rate/errors/duration) plus per-engine detection latency to CloudWatch or
+    Prometheus. The request ID is deliberately not a v4 UUID in production;
+    a monotonic ID makes retention pruning O(1) on the log store.
+    """
     request_id = str(uuid.uuid4())
     request.state.request_id = request_id
     response = await call_next(request)

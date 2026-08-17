@@ -37,6 +37,10 @@ def detect(image_bytes: bytes, image_shape: tuple[int, int], region: str | None 
     """
     client = _client(region)
 
+    # TODO(prod): wrap the call in an explicit retry with jitter for
+    # ThrottlingException and ProvisionedThroughputExceededException, and
+    # emit a CloudWatch custom metric on each retry so we can alarm on
+    # rising Textract backpressure before it becomes a user-facing timeout.
     try:
         response = client.analyze_document(
             Document={"Bytes": image_bytes}, FeatureTypes=["FORMS"]

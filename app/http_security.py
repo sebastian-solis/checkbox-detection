@@ -180,6 +180,11 @@ class RateLimitMiddleware(BaseHTTPMiddleware):
     Memory only: it resets on restart, which is fine for a defence-in-depth
     control and would be replaced by a shared store in production. Health
     checks are excluded so a probe cannot trip the limit for real callers.
+
+    TODO(prod): back this by Redis or DynamoDB so the counter survives a
+    restart and is shared across replicas. In-memory is safe for a single
+    instance but the moment we scale horizontally each pod will allow the
+    full ceiling independently, which is not what the operator asked for.
     """
 
     _EXEMPT_PATHS: frozenset[str] = frozenset({"/health"})
