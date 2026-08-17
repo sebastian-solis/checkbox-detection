@@ -47,6 +47,7 @@ class DetectionSettings:
     """
 
     min_box_width_ratio: float = 0.009
+    min_box_side_pixels: int = 6
     # Chosen against the reviewed corpus rather than by eye. The largest real
     # checkbox measured 0.0216 of page width; the smallest form data cell that
     # was slipping through measured 0.0263. This sits between the two, so it has
@@ -74,13 +75,22 @@ class DetectionSettings:
     min_border_ink: float = 0.10
     duplicate_iou_threshold: float = 0.3
     interior_inset_ratio: float = 0.22
-    checked_ink_threshold: float = 0.14
+    # Real empty boxes measure near 0.00 and a genuinely-marked X measured 0.132.
+    # 0.12 sits under the real mark and well above the empty class.
+    checked_ink_threshold: float = 0.12
+    # An interior with ink between the ambiguity floor and the checked threshold
+    # is almost never a real checkbox on the reviewed corpus: it is the signature
+    # of a printed letter or artifact caught by the geometric filters. Drop the
+    # candidate rather than surface it as low-confidence unchecked, which is what
+    # was flagging things like a printed "C" as "needs review".
+    ambiguity_ink_floor: float = 0.03
     deskew_enabled: bool = True
 
     @classmethod
     def from_env(cls) -> DetectionSettings:
         return cls(
             min_box_width_ratio=_env_float("MIN_BOX_WIDTH_RATIO", cls.min_box_width_ratio),
+            min_box_side_pixels=_env_int("MIN_BOX_SIDE_PIXELS", cls.min_box_side_pixels),
             max_box_width_ratio=_env_float("MAX_BOX_WIDTH_RATIO", cls.max_box_width_ratio),
             min_aspect_ratio=_env_float("MIN_ASPECT_RATIO", cls.min_aspect_ratio),
             max_aspect_ratio=_env_float("MAX_ASPECT_RATIO", cls.max_aspect_ratio),
@@ -99,6 +109,7 @@ class DetectionSettings:
             ),
             interior_inset_ratio=_env_float("INTERIOR_INSET_RATIO", cls.interior_inset_ratio),
             checked_ink_threshold=_env_float("CHECKED_INK_THRESHOLD", cls.checked_ink_threshold),
+            ambiguity_ink_floor=_env_float("AMBIGUITY_INK_FLOOR", cls.ambiguity_ink_floor),
             deskew_enabled=_env_bool("DESKEW_ENABLED", cls.deskew_enabled),
         )
 

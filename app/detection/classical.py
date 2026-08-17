@@ -35,7 +35,8 @@ def detect(image: np.ndarray, settings: DetectionSettings) -> list[Checkbox]:
     ]
     deduplicated = _suppress_overlaps(candidates, settings.duplicate_iou_threshold)
 
-    return [_classify(box, binary, settings) for box in deduplicated]
+    classified = (_classify(box, binary, settings) for box in deduplicated)
+    return [checkbox for checkbox in classified if checkbox is not None]
 
 
 def _find_box_candidates(
@@ -49,7 +50,7 @@ def _find_box_candidates(
     whether the scan came in at 200 or 600 DPI.
     """
     width = shape[1]
-    min_side = max(6, int(width * settings.min_box_width_ratio))
+    min_side = max(settings.min_box_side_pixels, int(width * settings.min_box_width_ratio))
     max_side = int(width * settings.max_box_width_ratio)
 
     # A border segment only has to be most of one side long to count as a rule.
@@ -249,11 +250,14 @@ def _suppress_overlaps(
 
 def _classify(
     box: BoundingBox, binary: np.ndarray, settings: DetectionSettings
-) -> Checkbox:
+) -> Checkbox | None:
     """Decide whether a box is marked, from how much ink sits inside it.
 
     The border is excluded before measuring, otherwise every box would read as
-    partly filled simply because it has edges.
+    partly filled simply because it has edges. Interiors that sit in the
+    ambiguity band, above the empty threshold but below the checked threshold,
+    are dropped: on the reviewed corpus that range is where non-checkbox
+    artifacts (a printed letter caught as a candidate) live.
     """
     inset_x = max(1, int(box.width * settings.interior_inset_ratio))
     inset_y = max(1, int(box.height * settings.interior_inset_ratio))
@@ -263,9 +267,12 @@ def _classify(
         box.x1 + inset_x : box.x2 - inset_x,
     ]
     if interior.size == 0:
-        return Checkbox(bbox=box, is_checked=False, confidence=0.0, ink_ratio=0.0)
+        return None
 
     ink_ratio = float(np.count_nonzero(interior) / interior.size)
+    if settings.ambiguity_ink_floor <= ink_ratio < settings.checked_ink_threshold:
+        return None
+
     is_checked = ink_ratio >= settings.checked_ink_threshold
 
     return Checkbox(
