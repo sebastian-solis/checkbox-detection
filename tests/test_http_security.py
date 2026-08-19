@@ -271,3 +271,60 @@ def test_api_key_uses_constant_time_compare():
 
     source = inspect.getsource(ApiKeyMiddleware)
     assert "hmac.compare_digest" in source
+
+
+# ---------------------------------------------------------------------------
+# Decompression-bomb protection
+# ---------------------------------------------------------------------------
+
+
+def _crafted_png_declaring(width: int, height: int) -> bytes:
+    """A tiny valid PNG whose header advertises the given dimensions.
+
+    Pillow allocates the raster on ``load``, not on ``open``, so writing an
+    image that declares the size in the header and then reading it back with
+    ``Image.open`` gives back the declared size without ever paying for the
+    pixels. That is the primitive an attacker would use to try to slip past a
+    naive check that decodes first and asks about size second.
+    """
+    from PIL import Image
+
+    buffer = io.BytesIO()
+    Image.new("RGB", (width, height), color="white").save(buffer, format="PNG")
+    return buffer.getvalue()
+
+
+def test_pixel_limit_rejects_before_any_full_decode(monkeypatch):
+    """A large-declaring image must be refused without calling cv2.imdecode.
+
+    The check that matters is not that oversized images are rejected but that
+    they are rejected before the pixel buffer is allocated. Patching imdecode
+    to explode proves the enforcement runs on the header alone.
+    """
+    from app import security
+
+    def _explode(*_args, **_kwargs):
+        raise AssertionError("cv2.imdecode must not be called for oversized inputs")
+
+    monkeypatch.setattr(security.cv2, "imdecode", _explode)
+
+    from app.config import UploadSettings
+
+    settings = UploadSettings(max_pixels=1024)  # 32x32 ceiling
+    payload = _crafted_png_declaring(64, 64)  # 4096 pixels, over the ceiling
+
+    with pytest.raises(security.UploadRejected) as excinfo:
+        security.validate_and_decode(payload, "image/png", settings)
+    assert "pixel limit" in str(excinfo.value)
+
+
+def test_pixel_limit_lets_a_normal_image_through():
+    """The header-first check does not regress the accept path."""
+    from app import security
+    from app.config import UploadSettings
+
+    settings = UploadSettings(max_pixels=1_000_000)
+    payload = _crafted_png_declaring(128, 128)
+
+    image = security.validate_and_decode(payload, "image/png", settings)
+    assert image.shape[:2] == (128, 128)

@@ -17,8 +17,11 @@ place this service does unbounded work on unbounded input.
 
 from __future__ import annotations
 
+import io
+
 import cv2
 import numpy as np
+from PIL import Image, UnidentifiedImageError
 
 from app.config import UploadSettings
 
@@ -64,16 +67,28 @@ def validate_and_decode(
             "(PNG, JPEG, TIFF, BMP or WEBP)."
         )
 
+    # Read the declared dimensions from the image header before decoding the
+    # pixel buffer. `cv2.imdecode` allocates the full raster to check the
+    # dimensions after the fact, which is exactly the decompression-bomb the
+    # limit is meant to prevent (a 100 KB PNG can declare a billion pixels
+    # and OOM the process on decode). Pillow's ``Image.open`` is lazy: it
+    # parses the header and exposes ``.size`` without materialising pixels,
+    # so the ceiling gets enforced before any expensive work runs.
+    try:
+        with Image.open(io.BytesIO(payload)) as probe:
+            declared_width, declared_height = probe.size
+    except (UnidentifiedImageError, OSError) as exc:
+        raise UploadRejected("File could not be decoded as an image.") from exc
+
+    if declared_width * declared_height > settings.max_pixels:
+        raise UploadRejected(
+            f"Image resolution {declared_width}x{declared_height} exceeds the "
+            f"{settings.max_pixels:,} pixel limit."
+        )
+
     image = cv2.imdecode(np.frombuffer(payload, dtype=np.uint8), cv2.IMREAD_COLOR)
     if image is None:
         raise UploadRejected("File could not be decoded as an image.")
-
-    height, width = image.shape[:2]
-    if height * width > settings.max_pixels:
-        raise UploadRejected(
-            f"Image resolution {width}x{height} exceeds the "
-            f"{settings.max_pixels:,} pixel limit."
-        )
 
     return image
 
