@@ -10,6 +10,12 @@ RUN apt-get update \
 
 WORKDIR /srv
 
+# Upgrade the base pip toolchain before installing anything else. The
+# python:3.13-slim-bookworm base ships with a setuptools that Trivy flags as
+# HIGH (CVE-2025-47273, path traversal in PackageIndex). Bumping it here keeps
+# the base image current without swapping to a heavier one.
+RUN pip install --no-cache-dir --upgrade "pip>=25.0" "setuptools>=78.1.1" "wheel"
+
 # Dependencies first so a code edit does not invalidate the install layer.
 COPY requirements.txt .
 RUN pip install --no-cache-dir -r requirements.txt
