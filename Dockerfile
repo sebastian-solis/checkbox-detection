@@ -10,15 +10,24 @@ RUN apt-get update \
 
 WORKDIR /srv
 
-# Upgrade the base pip toolchain before installing anything else. The
-# python:3.13-slim-bookworm base ships with a setuptools that Trivy flags as
-# HIGH (CVE-2025-47273, path traversal in PackageIndex). Bumping it here keeps
-# the base image current without swapping to a heavier one.
-RUN pip install --no-cache-dir --upgrade "pip>=25.0" "setuptools>=78.1.1" "wheel"
-
 # Dependencies first so a code edit does not invalidate the install layer.
 COPY requirements.txt .
-RUN pip install --no-cache-dir -r requirements.txt
+# pip and ensurepip are build-time tools. Leaving them in the shipped image
+# costs us two HIGH findings that have nothing to do with our own code
+# (CVE-2025-47273 in the setuptools wheel ensurepip bundles, and an advisory
+# against the msgpack pip vendors), and hands anyone who gets execution inside
+# the container a working package installer for staging a second payload.
+# Install what the app needs, then remove the installer and everything it
+# carried. Nothing in the runtime path imports pip, setuptools or pkg_resources.
+RUN pip install --no-cache-dir -r requirements.txt \
+ && PY_LIB="$(python -c 'import sysconfig; print(sysconfig.get_paths()["purelib"])')" \
+ && STD_LIB="$(python -c 'import sysconfig; print(sysconfig.get_paths()["stdlib"])')" \
+ && rm -rf "${STD_LIB}/ensurepip" \
+           "${PY_LIB}/pip" "${PY_LIB}/pip-"*.dist-info \
+           "${PY_LIB}/setuptools" "${PY_LIB}/setuptools-"*.dist-info \
+           "${PY_LIB}/pkg_resources" \
+           "${PY_LIB}/wheel" "${PY_LIB}/wheel-"*.dist-info \
+ && find / -name "*.whl" -delete
 
 COPY app/ ./app/
 COPY static/ ./static/
