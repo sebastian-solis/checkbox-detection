@@ -26,8 +26,7 @@ RUN pip install --no-cache-dir -r requirements.txt \
            "${PY_LIB}/pip" "${PY_LIB}/pip-"*.dist-info \
            "${PY_LIB}/setuptools" "${PY_LIB}/setuptools-"*.dist-info \
            "${PY_LIB}/pkg_resources" \
-           "${PY_LIB}/wheel" "${PY_LIB}/wheel-"*.dist-info \
- && find / -name "*.whl" -delete
+           "${PY_LIB}/wheel" "${PY_LIB}/wheel-"*.dist-info
 
 COPY app/ ./app/
 COPY static/ ./static/
